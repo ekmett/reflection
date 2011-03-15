@@ -160,9 +160,9 @@ instance Unused (Stable s a) where unused Stable{} = ()
 instance ReifiesStorable s => Reifies (Stable s a) a where
     reflect = r where
         r = unsafePerformIO $ do
-            pure <$> deRefStablePtr p <* freeStablePtr p
-
-        p = pointer reflectStorable r
+               pure <$> deRefStablePtr (pointer reflectStorable r)
+            -- pure <$> deRefStablePtr p <* freeStablePtr p
+        -- p = pointer reflectStorable r
 
         pointer :: Tagged (s' p) p -> Tagged (Stable s' a') a' -> p
         pointer (Tagged a) _ = a
@@ -171,11 +171,12 @@ instance ReifiesStorable s => Reifies (Stable s a) a where
 reify :: a -> (forall s. Reifies s a => Tagged s w) -> w
 reify a k = unsafePerformIO $ do
         p <- newStablePtr a
-        reifyStorable p (stable (reflect `before` (return <$> k)))
+        -- reifyStorable p (stable (reflect `before` (return <$> k)))
+        reifyStorable p (stable (return <$> k))
     where
         stable :: Retag (s' (StablePtr a')) (Stable s' a')
         stable = retag
-        before :: Tagged (s' a') a' -> Tagged (s' a') r -> Tagged (s' a') r
-        before = seq
+        -- before :: Tagged (s' a') a' -> Tagged (s' a') r -> Tagged (s' a') r
+        -- before = seq
 {-# NOINLINE reify #-}
 
