@@ -1,9 +1,10 @@
 {-# LANGUAGE RankNTypes, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, TypeOperators #-}
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in #-}
 
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
--- Copyright  : 2009 Edward Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
+-- Copyright  : 2009-2011 Edward Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
 -- License    : BSD3
 --
 -- Maintainer  : Edward Kmett <ekmett@gmail.com>
@@ -159,24 +160,24 @@ instance Unused (Stable s a) where unused Stable{} = ()
 
 instance ReifiesStorable s => Reifies (Stable s a) a where
     reflect = r where
-        r = unsafePerformIO $ do
-               pure <$> deRefStablePtr (pointer reflectStorable r)
-            -- pure <$> deRefStablePtr p <* freeStablePtr p
-        -- p = pointer reflectStorable r
+        r = unsafePerformIO $ 
+                 pure <$> deRefStablePtr p <* freeStablePtr p
+        p = pointer reflectStorable r
 
         pointer :: Tagged (s' p) p -> Tagged (Stable s' a') a' -> p
         pointer (Tagged a) _ = a
     {-# NOINLINE reflect #-}
 
+-- This had to be moved to the top level, due to an apparent bug in the ghc inliner introduced in ghc 7.0.x
+reflectBefore :: Reifies s a => Tagged s b -> Tagged s b
+reflectBefore = liftA2 seq reflect
+{-# NOINLINE reflectBefore #-}
+
 reify :: a -> (forall s. Reifies s a => Tagged s w) -> w
 reify a k = unsafePerformIO $ do
         p <- newStablePtr a
-        -- reifyStorable p (stable (reflect `before` (return <$> k)))
-        reifyStorable p (stable (return <$> k))
+        reifyStorable p (stable (reflectBefore (return <$> k)))
     where
         stable :: Retag (s' (StablePtr a')) (Stable s' a')
         stable = retag
-        -- before :: Tagged (s' a') a' -> Tagged (s' a') r -> Tagged (s' a') r
-        -- before = seq
 {-# NOINLINE reify #-}
-
