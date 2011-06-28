@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, TypeOperators #-}
+{-# LANGUAGE RankNTypes, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in #-}
 
 ----------------------------------------------------------------------------
@@ -16,7 +16,7 @@
 --
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
--- Modified to minimize extensions and work with Data.Tagged rather than 
+-- Modified to minimize extensions and work with Data.Proxy rather than 
 -- explicit scoped type variables by Edward Kmett.
 --
 -------------------------------------------------------------------------------
@@ -50,56 +50,65 @@ import Foreign.Storable
 import System.IO.Unsafe
 import Control.Applicative 
 import Prelude hiding (succ, pred)
-import Data.Tagged
+import Data.Proxy
 
-class Unused t where unused :: t -> ()
-
-type Retag f g = forall b. Tagged g b -> Tagged f b
 
 newtype Zero = Zero Zero deriving (Show)
 newtype Twice s = Twice (Twice s) deriving (Show)
 newtype Succ s = Succ (Succ s) deriving (Show)
 newtype Pred s = Pred (Pred s) deriving (Show)
-instance Unused Zero where unused Zero{} = ()
-instance Unused (Twice s) where unused Twice{} = ()
-instance Unused (Succ s) where unused Succ{} = ()
-instance Unused (Pred s) where unused Pred{} = ()
 
-pop :: Retag (f s) s
-pop = retag
-{-# INLINE pop #-} 
+-- silence compiler warnings about unused constructors
+class Unused t where 
+  unused :: t -> ()
+instance Unused Zero where 
+  unused Zero{} = ()
+instance Unused (Twice s) where 
+  unused Twice{} = ()
+instance Unused (Succ s) where 
+  unused Succ{} = ()
+instance Unused (Pred s) where 
+  unused Pred{} = ()
+
 
 class ReifiesNum s where
-    reflectNum :: Num a => Tagged s a
+  reflectNum :: Num a => Proxy s -> a
 
 instance ReifiesNum Zero where
-    reflectNum = pure 0
+  reflectNum = pure 0
+
+pop :: Proxy (f s) -> Proxy s
+pop Proxy = Proxy
+{-# INLINE pop #-} 
 
 instance ReifiesNum s => ReifiesNum (Twice s) where
-    reflectNum = (2*) <$> pop reflectNum 
+  reflectNum p = 2 * reflectNum (pop p)
 
 instance ReifiesNum s => ReifiesNum (Succ s) where
-    reflectNum = (1+) <$> pop reflectNum
+  reflectNum p = 1 + reflectNum (pop p)
 
 instance ReifiesNum s => ReifiesNum (Pred s) where
-    reflectNum = subtract 1 <$> pop reflectNum
+  reflectNum p = reflectNum (pop p) - 1
 
-reifyIntegral :: Integral a => a -> (forall s. ReifiesNum s => Tagged s w) -> w
+reifyIntegral :: Integral a => a -> (forall s. ReifiesNum s => Proxy s -> w) -> w
 reifyIntegral i k = case quotRem i 2 of
     (0, 0) -> zero k 
-    (j, 0) -> reifyIntegral j (twice k)
-    (j, 1) -> reifyIntegral j (twice (succ k))
-    (j,-1) -> reifyIntegral j (twice (pred k))
+    (j, 0) -> reifyIntegral j (k . twice)
+    (j, 1) -> reifyIntegral j (k . succ . twice)
+    (j,-1) -> reifyIntegral j (k . pred . twice)
     _      -> undefined 
-  where
-    twice :: Retag s (Twice s)
-    twice = retag
-    succ :: Retag s (Succ s)
-    succ = retag
-    pred :: Retag s (Pred s)
-    pred = retag
-    zero :: Tagged Zero a -> a
-    zero = unTagged
+
+twice :: Proxy s -> Proxy (Twice s)
+twice _ = Proxy
+
+succ :: Proxy s -> Proxy (Succ s)
+succ _ = Proxy 
+
+pred :: Proxy s -> Proxy (Pred s)
+pred _ = Proxy
+
+zero :: (Proxy Zero -> a) -> a
+zero k = k Proxy
 
 newtype Nil = Nil Nil
 newtype Cons s ss = Cons (Cons s ss)
@@ -107,56 +116,57 @@ instance Unused Nil where unused Nil{} = ()
 instance Unused (Cons s ss) where unused Cons{} = ()
 
 class ReifiesNums ss where
-    reflectNums :: Num a => Tagged ss [a]
+  reflectNums :: Num a => Proxy ss -> [a]
 
 instance ReifiesNums Nil where
-    reflectNums = pure []
+  reflectNums = pure []
 
 instance (ReifiesNum s, ReifiesNums ss) => ReifiesNums (Cons s ss) where
-    reflectNums = (:) <$> car reflectNum <*> cdr reflectNums where
-        car :: Retag (Cons s ss) s
-        car = retag
-        cdr :: Retag (Cons s ss) ss
-        cdr = retag
+  reflectNums p = reflectNum (car p) : reflectNums (cdr p) where
+    car :: Proxy (Cons s ss) -> Proxy s
+    car _ = Proxy
+    cdr :: Proxy (Cons s ss) -> Proxy ss
+    cdr _ = Proxy
 
-reifyIntegrals :: Integral a => [a] -> (forall ss. ReifiesNums ss => Tagged ss w) -> w
+reifyIntegrals :: Integral a => [a] -> (forall ss. ReifiesNums ss => Proxy ss -> w) -> w
 reifyIntegrals [] k = nil k where
-    nil :: Tagged Nil a' -> a'
-    nil = unTagged 
+    nil :: (Proxy Nil -> a') -> a'
+    nil f = f Proxy
 reifyIntegrals (i:ii) k = reifyIntegral i (reifyIntegrals ii (cons k)) where
-    cons :: Tagged (Cons s' ss') a' -> Tagged ss' (Tagged s' a')
-    cons = pure . retag
+    cons :: (Proxy (Cons s' ss') -> a') -> Proxy ss' -> Proxy s' -> a'
+    cons f _ _ = f Proxy
     
 newtype Store s a = Store (Store s a)
 instance Unused (Store s a) where unused Store{} = ()
 
 class ReifiesStorable s where
-    reflectStorable :: Storable a => Tagged (s a) a
+    reflectStorable :: Storable a => Proxy (s a) -> a
 
 instance ReifiesNums s => ReifiesStorable (Store s) where
     reflectStorable = r where 
         r = unsafePerformIO $ alloca $ \p -> do 
             pokeArray (castPtr p) (bytes reflectNums r)
             pure <$> peek p 
-        bytes :: Tagged s' [CChar] -> Tagged (Store s' b) b -> [CChar]
-        bytes (Tagged a) _ = a
+        bytes :: (Proxy s' -> [CChar]) -> (Proxy (Store s' b) -> b) -> [CChar]
+        bytes k _ = k Proxy
     {-# NOINLINE reflectStorable #-}
 
-store :: Retag s' (Store s' c)
-store = retag
+store :: Proxy s' -> Proxy (Store s' c)
+store _ = Proxy
 
-reifyStorable :: Storable a => a -> (forall s. ReifiesStorable s => Tagged (s a) w) -> w
-reifyStorable a k = reifyIntegrals bytes (store k)
+reifyStorable :: Storable a => a -> (forall s. ReifiesStorable s => Proxy (s a) -> w) -> w
+reifyStorable a k = reifyIntegrals bytes (k . store)
   where
     bytes :: [CChar]
     bytes = unsafePerformIO $ with a (peekArray (sizeOf a) . castPtr) 
 {-# NOINLINE reifyStorable #-}
 
 class Reifies s a | s -> a where 
-    reflect :: Tagged s a
+    reflect :: Proxy s -> a
 
 newtype Stable s a = Stable (s (Stable s a))
-instance Unused (Stable s a) where unused Stable{} = ()
+instance Unused (Stable s a) where 
+    unused Stable{} = ()
 
 instance ReifiesStorable s => Reifies (Stable s a) a where
     reflect = r where
@@ -164,20 +174,20 @@ instance ReifiesStorable s => Reifies (Stable s a) a where
                  pure <$> deRefStablePtr p <* freeStablePtr p
         p = pointer reflectStorable r
 
-        pointer :: Tagged (s' p) p -> Tagged (Stable s' a') a' -> p
-        pointer (Tagged a) _ = a
+        pointer :: (Proxy (s' p) -> p) -> (Proxy (Stable s' a') -> a') -> p
+        pointer f _ = f Proxy
     {-# NOINLINE reflect #-}
 
 -- This had to be moved to the top level, due to an apparent bug in the ghc inliner introduced in ghc 7.0.x
-reflectBefore :: Reifies s a => Tagged s b -> Tagged s b
-reflectBefore = liftA2 seq reflect
+reflectBefore :: Reifies s a => (Proxy s -> b) -> Proxy s -> b
+reflectBefore f = let b = f Proxy in b `seq` const b
 {-# NOINLINE reflectBefore #-}
 
-reify :: a -> (forall s. Reifies s a => Tagged s w) -> w
+reify :: a -> (forall s. Reifies s a => Proxy s -> w) -> w
 reify a k = unsafePerformIO $ do
         p <- newStablePtr a
-        reifyStorable p (stable (reflectBefore (return <$> k)))
+        reifyStorable p (reflectBefore (return <$> k) . stable)
     where
-        stable :: Retag (s' (StablePtr a')) (Stable s' a')
-        stable = retag
+        stable :: Proxy (s' (StablePtr a')) -> Proxy (Stable s' a')
+        stable _ = Proxy
 {-# NOINLINE reify #-}
