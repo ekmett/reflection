@@ -1,4 +1,4 @@
-{-# LANGUAGE RankNTypes, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
+{-# LANGUAGE Rank2Types, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in #-}
 
 ----------------------------------------------------------------------------
@@ -17,7 +17,7 @@
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
 -- Modified to minimize extensions and work with Data.Proxy rather than 
--- explicit scoped type variables by Edward Kmett.
+-- explicit scoped type variables and undefined values by Edward Kmett.
 --
 -------------------------------------------------------------------------------
 
