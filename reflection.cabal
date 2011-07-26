@@ -1,24 +1,32 @@
-name:		    reflection
-version:	    0.4.0
-license:	    BSD3
+name:		reflection
+version:	0.4.0.1
+license:	BSD3
 license-file:   LICENSE
-author:		    Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
-maintainer:	    Edward A. Kmett <ekmett@gmail.com>
-stability:	    experimental
-homepage:	    http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf
-category:	    Data, Reflection, Dependent Types
-synopsis:	    Functional Pearl: Implicit Configurations
+author:		Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
+maintainer:	Edward A. Kmett <ekmett@gmail.com>
+stability:	experimental
+homepage:	http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf
+category:	Data, Reflection, Dependent Types
+synopsis:	Functional Pearl: Implicit Configurations
 copyright:      2009 Edward A. Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
 description:    Implementation of the ideas presented in the paper "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and Chung-chieh Shan.
                 Modified to avoid the use of scoped type variables, and to use a phantom type wrapper rather than dummy arguments.
 build-type:     Simple
 cabal-version:  >=1.2
 
+source-repository head
+  type: git
+  location: git://github.com/ekmett/reflection.git
+
 library
+  other-extensions:
+    Rank2Types
+    MultiParamTypeClasses
+    FunctionalDependencies
+    FlexibleInstances
   build-depends: 
     base >= 4 && < 5,
     tagged >= 0.2.2 && < 0.3
   exposed-modules:
     Data.Reflection
-    
   ghc-options: -Wall
