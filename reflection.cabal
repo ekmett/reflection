@@ -12,7 +12,7 @@ copyright:      2009 Edward A. Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
 description:    Implementation of the ideas presented in the paper "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and Chung-chieh Shan.
                 Modified to avoid the use of scoped type variables, and to use a phantom type wrapper rather than dummy arguments.
 build-type:     Simple
-cabal-version:  >=1.2
+cabal-version:  >=1.6
 
 source-repository head
   type: git
