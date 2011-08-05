@@ -24,19 +24,16 @@
 module Data.Reflection 
     ( 
     -- * Reflect Integrals
-      ReifiesNum
-    , reflectNum
+      ReifiesNum(..)
     , reifyIntegral
     -- * Reflect Lists of Integrals
-    , ReifiesNums
+    , ReifiesNums(..)
     , reifyIntegrals
     -- * Reflect Storables
-    , ReifiesStorable
-    , reflectStorable
+    , ReifiesStorable(..)
     , reifyStorable
     -- * Reflect Anything
-    , Reifies
-    , reflect
+    , Reifies(..)
     , reify
     ) where
 
