@@ -1,5 +1,5 @@
 name:		reflection
-version:	0.4.1
+version:	0.4.1.1
 license:	BSD3
 license-file:   LICENSE
 author:		Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
@@ -26,7 +26,7 @@ library
     FlexibleInstances
   build-depends: 
     base >= 4 && < 5,
-    tagged >= 0.2.2.3 && < 0.3
+    tagged >= 0.2.3 && < 0.3
   exposed-modules:
     Data.Reflection
   ghc-options: -Wall
