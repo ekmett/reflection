@@ -69,13 +69,13 @@ instance Unused (Pred s) where
 
 
 class ReifiesNum s where
-  reflectNum :: Num a => Proxy s -> a
+  reflectNum :: Num a => proxy s -> a
 
 instance ReifiesNum Zero where
   reflectNum = pure 0
 
-pop :: Proxy (f s) -> Proxy s
-pop Proxy = Proxy
+pop :: proxy (f s) -> Proxy s
+pop _ = Proxy
 {-# INLINE pop #-} 
 
 instance ReifiesNum s => ReifiesNum (Twice s) where
@@ -95,13 +95,13 @@ reifyIntegral i k = case quotRem i 2 of
     (j,-1) -> reifyIntegral j (k . pred . twice)
     _      -> undefined 
 
-twice :: Proxy s -> Proxy (Twice s)
+twice :: proxy s -> Proxy (Twice s)
 twice _ = Proxy
 
-succ :: Proxy s -> Proxy (Succ s)
+succ :: proxy s -> Proxy (Succ s)
 succ _ = Proxy 
 
-pred :: Proxy s -> Proxy (Pred s)
+pred :: proxy s -> Proxy (Pred s)
 pred _ = Proxy
 
 zero :: (Proxy Zero -> a) -> a
@@ -113,16 +113,16 @@ instance Unused Nil where unused Nil{} = ()
 instance Unused (Cons s ss) where unused Cons{} = ()
 
 class ReifiesNums ss where
-  reflectNums :: Num a => Proxy ss -> [a]
+  reflectNums :: Num a => proxy ss -> [a]
 
 instance ReifiesNums Nil where
   reflectNums = pure []
 
 instance (ReifiesNum s, ReifiesNums ss) => ReifiesNums (Cons s ss) where
   reflectNums p = reflectNum (car p) : reflectNums (cdr p) where
-    car :: Proxy (Cons s ss) -> Proxy s
+    car :: proxy (Cons s ss) -> Proxy s
     car _ = Proxy
-    cdr :: Proxy (Cons s ss) -> Proxy ss
+    cdr :: proxy (Cons s ss) -> Proxy ss
     cdr _ = Proxy
 
 reifyIntegrals :: Integral a => [a] -> (forall ss. ReifiesNums ss => Proxy ss -> w) -> w
@@ -130,25 +130,25 @@ reifyIntegrals [] k = nil k where
     nil :: (Proxy Nil -> a') -> a'
     nil f = f Proxy
 reifyIntegrals (i:ii) k = reifyIntegral i (reifyIntegrals ii (cons k)) where
-    cons :: (Proxy (Cons s' ss') -> a') -> Proxy ss' -> Proxy s' -> a'
+    cons :: (Proxy (Cons s' ss') -> a') -> proxy ss' -> proxy s' -> a'
     cons f _ _ = f Proxy
     
 newtype Store s a = Store (Store s a)
 instance Unused (Store s a) where unused Store{} = ()
 
 class ReifiesStorable s where
-    reflectStorable :: Storable a => Proxy (s a) -> a
+    reflectStorable :: Storable a => proxy (s a) -> a
 
 instance ReifiesNums s => ReifiesStorable (Store s) where
     reflectStorable = r where 
         r = unsafePerformIO $ alloca $ \p -> do 
             pokeArray (castPtr p) (bytes reflectNums r)
             pure <$> peek p 
-        bytes :: (Proxy s' -> [CChar]) -> (Proxy (Store s' b) -> b) -> [CChar]
+        bytes :: (Proxy s' -> [CChar]) -> (proxy (Store s' b) -> b) -> [CChar]
         bytes k _ = k Proxy
     {-# NOINLINE reflectStorable #-}
 
-store :: Proxy s' -> Proxy (Store s' c)
+store :: proxy s' -> Proxy (Store s' c)
 store _ = Proxy
 
 reifyStorable :: Storable a => a -> (forall s. ReifiesStorable s => Proxy (s a) -> w) -> w
@@ -159,7 +159,7 @@ reifyStorable a k = reifyIntegrals bytes (k . store)
 {-# NOINLINE reifyStorable #-}
 
 class Reifies s a | s -> a where 
-    reflect :: Proxy s -> a
+    reflect :: proxy s -> a
 
 newtype Stable s a = Stable (s (Stable s a))
 instance Unused (Stable s a) where 
@@ -171,12 +171,12 @@ instance ReifiesStorable s => Reifies (Stable s a) a where
                  pure <$> deRefStablePtr p <* freeStablePtr p
         p = pointer reflectStorable r
 
-        pointer :: (Proxy (s' p) -> p) -> (Proxy (Stable s' a') -> a') -> p
+        pointer :: (Proxy (s' p) -> p) -> (proxy (Stable s' a') -> a') -> p
         pointer f _ = f Proxy
     {-# NOINLINE reflect #-}
 
 -- This had to be moved to the top level, due to an apparent bug in the ghc inliner introduced in ghc 7.0.x
-reflectBefore :: Reifies s a => (Proxy s -> b) -> Proxy s -> b
+reflectBefore :: Reifies s a => (Proxy s -> b) -> proxy s -> b
 reflectBefore f = let b = f Proxy in b `seq` const b
 {-# NOINLINE reflectBefore #-}
 
@@ -185,6 +185,6 @@ reify a k = unsafePerformIO $ do
         p <- newStablePtr a
         reifyStorable p (reflectBefore (return <$> k) . stable)
     where
-        stable :: Proxy (s' (StablePtr a')) -> Proxy (Stable s' a')
+        stable :: proxy (s' (StablePtr a')) -> Proxy (Stable s' a')
         stable _ = Proxy
 {-# NOINLINE reify #-}
