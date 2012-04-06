@@ -28,7 +28,7 @@ description:
   The argument passed along by reify is just a @data Proxy t = Proxy@, so all of the
   information needed to reconstruct your value has been moved to the type level.
   This enables it to be used when constructing instances (See @examples/Monoid.hs@).
-  An additional combinator, that may be more useful when building instances is also
+  An additional combinator that may be more useful when building instances is also
   supplied.
   .
   > reflectT :: Reified s => p s a -> a
