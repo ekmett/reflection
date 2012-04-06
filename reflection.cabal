@@ -1,5 +1,5 @@
 name:		reflection
-version:	0.5
+version:	0.5.0.1
 license:	BSD3
 license-file:   LICENSE
 author:		Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan

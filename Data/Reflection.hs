@@ -9,7 +9,7 @@
 --
 -- Maintainer  : Edward Kmett <ekmett@gmail.com>
 -- Stability   : experimental
--- Portability : non-portable (scoped types, MPTCs, rank-n, FFI, kinds)
+-- Portability : non-portable (MPTCs, fundeps, rank-2 types, flexible instances)
 --
 -- Based on the Functional Pearl: Implicit Configurations paper by
 -- Oleg Kiselyov and Chung-chieh Shan.
@@ -21,8 +21,8 @@
 --
 -------------------------------------------------------------------------------
 
-module Data.Reflection 
-    ( 
+module Data.Reflection
+    (
     -- * Reflect Integrals
       ReifiesNum(..)
     , reifyIntegral
