@@ -40,7 +40,7 @@ module Data.Reflection
 import Data.Proxy
 import Unsafe.Coerce
 
-class Reifies s a | s -> a where 
+class Reifies s a | s -> a where
   reflect :: p s -> a
 
 newtype Magic a w = Magic (forall s. Reifies s a => Proxy s -> w)
