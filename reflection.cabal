@@ -15,7 +15,7 @@ build-type:     Simple
 cabal-version:  >= 1.10
 description:
   This package provides an implementation of the ideas presented in the paper
-  "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and
+  \"Functional Pearl: Implicit Configurations\" by Oleg Kiselyov and
   Chung-chieh Shan. However, the API has been modified to use @Rank2Types@ and @TypeFamilies@ and
   the implementation has been streamlined to improve performance.
   .
@@ -25,7 +25,8 @@ description:
   .
   * Faster internal implementation.
   .
-  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and @reflect@ are already faster.
+  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and @reflect@ are
+    considerably faster than the special case combinators were.
   .
   /Changes in 0.8/:
   .

@@ -24,8 +24,8 @@
 --
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
--- Modified to minimize extensions and work with Data.Proxy rather
--- than undefined values by Edward Kmett.
+-- The approach from the paper was modified to work with Data.Proxy and streamline
+-- the API by Edward Kmett and Elliott Hird.
 --
 -- Usage reduces to using two combinators, 'reify' and 'reflect'.
 --
@@ -98,7 +98,7 @@ BYTES(GO)
 #undef GO
 
 impossible :: a
-impossible = error "Data.Reflection.reifyByte: impossible
+impossible = error "Data.Reflection.reifyByte: impossible"
 
 reifyByte :: Word8 -> (forall s. B s => Proxy s -> w) -> w
 #ifdef __GLASGOW_HASKELL__
