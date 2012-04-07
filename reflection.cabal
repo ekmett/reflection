@@ -1,8 +1,8 @@
 name:           reflection
-version:        0.9
+version:        1.0
 license:        BSD3
 license-file:   LICENSE
-author:         Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
+author:         Edward A. Kmett, Elliot Hird, Oleg Kiselyov and Chung-chieh Shan
 maintainer:     Edward A. Kmett <ekmett@gmail.com>
 stability:      experimental
 homepage:       http://github.com/ekmett/reflection
@@ -21,9 +21,15 @@ description:
   .
   The original paper can be obtained from <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
   .
+  /Changes in 1.0/:
+  .
+  * Much faster implementation available that is about 50 /times/ faster than 0.9 and which runs
+    purely on black magic. This version is now used by default. To turn it off install with the
+    'slow' flag. If you encounter a problem with implementation, please contact the author.
+  .
   /Changes in 0.9/:
   .
-  * Faster internal implementation.
+  * Faster internal implementation, about 40 percent faster than 0.8.
   .
   * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and @reflect@ are
     considerably faster than the special case combinators were.
@@ -77,16 +83,24 @@ extra-source-files:
   examples/Benchmark.hs
   README
 
+flag slow
+  default: False
+  manual: False
+
 source-repository head
   type: git
   location: git://github.com/ekmett/reflection.git
 
 library
   default-language: Haskell2010
-  default-extensions: CPP
-  other-extensions: Rank2Types, TypeFamilies, ScopedTypeVariables
-  if impl(ghc)
-    other-extensions: MagicHash
+  other-extensions: Rank2Types, TypeFamilies
+  if flag(slow) || !impl(ghc)
+    default-extensions: CPP
+    other-extensions: MagicHash, ScopedTypeVariables
+    hs-source-dirs: slow
+  else
+    other-extensions: GADTs
+    hs-source-dirs: fast
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3
