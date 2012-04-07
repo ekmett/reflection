@@ -1,5 +1,5 @@
 name:           reflection
-version:        1.1.2
+version:        1.1.3
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Elliott Hird, Oleg Kiselyov and Chung-chieh Shan
@@ -7,7 +7,8 @@ maintainer:     Edward A. Kmett <ekmett@gmail.com>
 stability:      experimental
 homepage:       http://github.com/ekmett/reflection
 category:       Data, Reflection, Dependent Types
-synopsis:       Reifies arbitrary terms into types that can be reflected back into terms
+synopsis:       Reifies arbitrary terms into types that can be reflected back
+                into terms
 copyright:      2009-2012 Edward A. Kmett,
                 2012 Elliott Hird,
                 2004 Oleg Kiselyov and Chung-chieh Shan
@@ -18,16 +19,19 @@ description:
   \"Functional Pearl: Implicit Configurations\" by Oleg Kiselyov and
   Chung-chieh Shan. However, the API has been streamlined to improve performance.
   .
-  The original paper can be obtained from <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
+  The original paper can be obtained from
+  <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>.
   .
   /Changes from 0.5 to 1.1/:
   .
-  * Much faster implementation available that is about 50 /times/ faster than 0.9 and which runs
-    purely on black magic. This version is now used by default. To turn it off install with the
-    'slow' flag. If you encounter a problem with implementation, please contact the author.
+  * Much faster implementation available that is about 50 /times/ faster than
+    0.9 and which runs purely on black magic. This version is now used by
+    default. To turn it off install with the @slow@ flag. If you encounter a
+    problem with the implementation, please contact the author.
   .
-  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and @reflect@ are
-    about 3 orders of magnitude faster than the special case combinators were.
+  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and
+    @reflect@ are about 3 orders of magnitude faster than the special case
+    combinators were.
   .
   /Changes in 0.5/:
   .
@@ -60,6 +64,9 @@ source-repository head
 library
   ghc-options: -Wall
 
+  if impl(ghc >= 7.2)
+    default-extensions: Trustworthy
+
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3
@@ -75,4 +82,3 @@ library
   other-extensions: MultiParamTypeClasses, FunctionalDependencies, Rank2Types
 
   exposed-modules: Data.Reflection
-

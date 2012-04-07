@@ -1,9 +1,13 @@
-{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
-{-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds #-}
+{-# OPTIONS_GHC -fno-cse #-}
+{-# OPTIONS_GHC -fno-full-laziness #-}
+{-# OPTIONS_GHC -fno-float-in #-}
+{-# OPTIONS_GHC -fno-warn-unused-binds #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
@@ -16,20 +20,21 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Based on the Functional Pearl: Implicit Configurations paper by
--- Oleg Kiselyov and Chung-chieh Shan.
+-- Reifies arbitrary terms at the type level. Based on the Functional
+-- Pearl: Implicit Configurations paper by Oleg Kiselyov and
+-- Chung-chieh Shan.
 --
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
--- The approach from the paper was modified to work with Data.Proxy and streamline
--- the API by Edward Kmett and Elliott Hird.
+-- The approach from the paper was modified to work with Data.Proxy
+-- and streamline the API by Edward Kmett and Elliott Hird.
 --
--- Usage reduces to using two combinators, 'reify' and 'reflect'.
+-- Usage comes down to two combinators, 'reify' and 'reflect'.
 --
--- > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
--- > 12
+-- >>> reify 6 (\p -> reflect p + reflect p)
+-- 12
 --
--- The argument passed along by reify is just a @data Proxy t =
+-- The argument passed along by reify is just a @data 'Proxy' t =
 -- Proxy@, so all of the information needed to reconstruct your value
 -- has been moved to the type level.  This enables it to be used when
 -- constructing instances (see @examples/Monoid.hs@).
@@ -37,7 +42,6 @@
 
 module Data.Reflection
     (
-    -- * Reifying any term at the type level
       Reifies(..)
     , reify
     ) where
@@ -51,7 +55,7 @@ import Data.Bits
 import Data.Word
 
 class B s where
-  reflectByte :: p s -> IntPtr
+  reflectByte :: proxy s -> IntPtr
 
 #define CAT(a,b) a/**/b
 
@@ -95,7 +99,7 @@ BYTES(GO)
 impossible :: a
 impossible = error "Data.Reflection.reifyByte: impossible"
 
-reifyByte :: Word8 -> (forall s. B s => Proxy s -> w) -> w
+reifyByte :: Word8 -> (forall s. B s => Proxy s -> r) -> r
 reifyByte w k = case w of {
 #define GO(n) n -> k (Proxy :: Proxy CAT(T,n));
 BYTES(GO)
@@ -104,7 +108,9 @@ _ -> impossible
 }
 
 class Reifies s a | s -> a where
-  reflect :: p s -> a
+  -- | Recover a value inside a 'reify' context, given a proxy for its
+  -- reified type.
+  reflect :: proxy s -> a
 
 newtype Stable b0 b1 b2 b3 b4 b5 b6 b7 a =
   Stable (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
@@ -142,7 +148,8 @@ reflectBefore :: Reifies s a => (Proxy s -> b) -> proxy s -> b
 reflectBefore f = const $! f Proxy
 {-# NOINLINE reflectBefore #-}
 
-reify :: a -> (forall s. (Reifies s a) => Proxy s -> w) -> w
+-- | Reify a value at the type level, to be recovered with 'reflect'.
+reify :: a -> (forall s. (Reifies s a) => Proxy s -> r) -> r
 reify a k = unsafeDupablePerformIO $ do
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
