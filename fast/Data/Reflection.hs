@@ -1,4 +1,6 @@
-{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, Rank2Types #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE Rank2Types #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
@@ -11,8 +13,9 @@
 -- Stability   : experimental
 -- Portability : non-portable
 --
--- Based on the Functional Pearl: Implicit Configurations paper by
--- Oleg Kiselyov and Chung-chieh Shan.
+-- Reifies arbitrary terms at the type level. Based on the Functional
+-- Pearl: Implicit Configurations paper by Oleg Kiselyov and
+-- Chung-chieh Shan.
 --
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
@@ -20,19 +23,18 @@
 -- and to cheat by using knowledge of GHC's internal representations
 -- by Edward Kmett and Elliott Hird.
 --
--- Usage reduces to using two combinators, 'reify' and 'reflect'.
+-- Usage comes down to two combinators, 'reify' and 'reflect'.
 --
--- > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
--- > 12
+-- >>> reify 6 (\p -> reflect p + reflect p)
+-- 12
 --
--- The argument passed along by reify is just a @data Proxy t =
+-- The argument passed along by reify is just a @data 'Proxy' t =
 -- Proxy@, so all of the information needed to reconstruct your value
 -- has been moved to the type level.  This enables it to be used when
 -- constructing instances (see @examples/Monoid.hs@).
 -------------------------------------------------------------------------------
 module Data.Reflection
     (
-    -- * Reifying any term at the type level
       Reifies(..)
     , reify
     ) where
@@ -41,10 +43,12 @@ import Data.Proxy
 import Unsafe.Coerce
 
 class Reifies s a | s -> a where
-  reflect :: p s -> a
+  -- | Recover a value inside a 'reify' context, given a proxy for its
+  -- reified type.
+  reflect :: proxy s -> a
 
-newtype Magic a w = Magic (forall s. Reifies s a => Proxy s -> w)
+newtype Magic a r = Magic (forall s. Reifies s a => Proxy s -> r)
 
-reify :: a -> (forall s. Reifies s a => Proxy s -> w) -> w
+-- | Reify a value at the type level, to be recovered with 'reflect'.
+reify :: a -> (forall s. Reifies s a => Proxy s -> r) -> r
 reify a k = (unsafeCoerce (Magic k) $! const a) Proxy
-
