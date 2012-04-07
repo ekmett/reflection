@@ -1,4 +1,8 @@
-{-# LANGUAGE CPP, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, Rank2Types, ScopedTypeVariables #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE Rank2Types #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds #-}
 ----------------------------------------------------------------------------
 -- |

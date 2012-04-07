@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies, Rank2Types, GADTs #-}
+{-# LANGUAGE MultiParamTypeClasses, FunctionalDependencies, Rank2Types #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
@@ -33,23 +33,18 @@
 module Data.Reflection
     (
     -- * Reifying any term at the type level
-      Reified(..)
+      Reifies(..)
     , reify
     ) where
 
 import Data.Proxy
 import Unsafe.Coerce
 
-class Reified s where
-  type Reflected s
-  reflect :: p s -> Reflected s
+class Reifies s a | s -> a where 
+  reflect :: p s -> a
 
-data Equal a b where Refl :: Equal a a
+newtype Magic a w = Magic (forall s. Reifies s a => Proxy s -> w)
 
-newtype Magic a w = Magic (forall s. Reified s => Equal (Reflected s) a -> Proxy s -> w)
+reify :: a -> (forall s. Reifies s a => Proxy s -> w) -> w
+reify a k = (unsafeCoerce (Magic k) $! const a) Proxy
 
-reify' :: a -> (forall s. Reified s => Equal (Reflected s) a -> Proxy s -> w) -> w
-reify' a k = (unsafeCoerce (Magic k) $! const a) (unsafeCoerce Refl) Proxy
-
-reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
-reify a k = reify' a $ \Refl p -> k p
