@@ -15,7 +15,7 @@ monoidProxy :: M s a -> Proxy (s (Monoid_ a))
 monoidProxy _ = Proxy
 
 reflectM :: Reified s => M s a -> Monoid_ a
-reflectM m = reflect (monoidProxy m) where
+reflectM m = reflect (monoidProxy m)
 
 reifyMonoid :: (a -> a -> a) -> a -> (forall s. Reified s => Proxy (s (Monoid_ a)) -> r) -> r
 reifyMonoid f z = reify (Monoid_ f z)

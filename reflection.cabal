@@ -1,5 +1,5 @@
 name:           reflection
-version:        0.6
+version:        0.7
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
@@ -32,6 +32,17 @@ description:
   supplied.
   .
   > reflectT :: Reified s => p s a -> a
+  .
+  /Changes in 0.7/:
+  .
+  * Uses a much simpler construction where @reify@ now converts a @StablePtr@ to an
+    @IntPtr@ and reifies that directly as an integral type rather than serializing
+    and storing the StablePtr as a list of bytes as proposed in the original paper.
+  .
+  * Removed @ReifiedStorable@ and @ReifiedNums@.
+  .
+  * Since we have so many fewer classes now, @Data.Reflection.Internal@ was merged back
+    into @Data.Reflection@
   .
   /Changes in 0.6/:
   .
@@ -66,7 +77,5 @@ library
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3
-  exposed-modules:
-    Data.Reflection
-    Data.Reflection.Internal
+  exposed-modules: Data.Reflection
   ghc-options: -Wall
