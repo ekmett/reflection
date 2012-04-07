@@ -1,7 +1,7 @@
 {-# LANGUAGE Rank2Types, TypeFamilies #-}
-import Data.Reflection
-import Data.Monoid
-import Data.Proxy
+import Data.Reflection -- from reflection
+import Data.Monoid     -- from base
+import Data.Proxy      -- from tagged
 
 -- | Values in our dynamically constructed monoid over 'a'
 newtype M a s = M { runM :: a } deriving (Eq,Ord)

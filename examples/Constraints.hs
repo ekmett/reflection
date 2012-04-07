@@ -1,10 +1,10 @@
 {-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables #-}
-import Control.Newtype
-import Data.Constraint
-import Data.Constraint.Unsafe
-import Data.Monoid
-import Data.Proxy
-import Data.Reflection
+import Control.Newtype        -- from newtype
+import Data.Constraint        -- from constraints
+import Data.Constraint.Unsafe -- from constraints
+import Data.Monoid            -- from base
+import Data.Proxy             -- from tagged
+import Data.Reflection        -- from reflection
 
 -- | Values in our dynamically constructed monoid over 'a'
 newtype Lift (p :: * -> Constraint) (a :: *) (s :: *) = Lift { lower :: a }
