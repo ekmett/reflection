@@ -1,4 +1,10 @@
 reflection
 ==========
 
-Implementation of the ideas presented in the paper Functional Pearl: Implicit Configurations by Oleg Kiselyov and Chung-chieh Shan. Modified to avoid the use of scoped type variables, and to use a phantom type wrapper rather than dummy arguments.
+This package provides an implementation of the ideas presented in the paper
+
+  Oleg Kiselyov and Chung-Chieh Shan, "Functional Pearl: Implicit Configurations"
+  <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
+
+However, the API has been modified to use @Rank2Types@ and @TypeFamilies@ and the
+implementation has been streamlined to improve performance.

@@ -5,25 +5,27 @@ license-file:   LICENSE
 author:         Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
 maintainer:     Edward A. Kmett <ekmett@gmail.com>
 stability:      experimental
-homepage:       http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf
+homepage:       http://github.com/ekmett/reflection
 category:       Data, Reflection, Dependent Types
 synopsis:       Functional Pearl: Implicit Configurations
-copyright:      2009 Edward A. Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan,
-                2012 Elliott Hird
+copyright:      2009-2012 Edward A. Kmett,
+                2012 Elliott Hird,
+                2004 Oleg Kiselyov and Chung-chieh Shan
 build-type:     Simple
-cabal-version:  >= 1.6
+cabal-version:  >= 1.10
 description:
   This package provides an implementation of the ideas presented in the paper
   "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and
-  Chung-chieh Shan. However, the API has been modified to use @Rank2Types@ and
-  @TypeFamilies@.
+  Chung-chieh Shan. However, the API has been modified to use @Rank2Types@ and @TypeFamilies@ and
+  the implementation has been streamlined to improve performance.
+  .
+  The original paper can be obtained from <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
   .
   /Changes in 0.9/:
   .
   * Faster internal implementation.
   .
-  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; use the normal
-    API instead.
+  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; @reify@ and @reflect@ are already faster.
   .
   /Changes in 0.8/:
   .
@@ -72,13 +74,17 @@ extra-source-files:
   examples/Monoid.hs
   examples/Constraints.hs
   examples/Benchmark.hs
+  README
 
 source-repository head
   type: git
   location: git://github.com/ekmett/reflection.git
 
 library
-  other-extensions: CPP, Rank2Types, TypeFamilies, ScopedTypeVariables
+  default-extensions: CPP
+  other-extensions: Rank2Types, TypeFamilies, ScopedTypeVariables
+  if impl(ghc)
+    other-extensions: MagicHash
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3

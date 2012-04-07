@@ -1,9 +1,18 @@
-{-# LANGUAGE CPP, Rank2Types, TypeFamilies, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds -XMagicHash #-}
+-- CPP is provided by default-extensions, because it may not work in some compilers to #ifdef a pragma otherwise
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeFamilies #-}
+#ifdef __GLASGOW_HASKELL__
+{-# LANGUAGE MagicHash #-}
+#endif
+{-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
--- Copyright  : 2009-2012 Edward Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
+-- Copyright  : 2009-2012 Edward Kmett,
+--              2012 Elliott Hird,
+--              2004 Oleg Kiselyov and Chung-chieh Shan
 -- License    : BSD3
 --
 -- Maintainer  : Edward Kmett <ekmett@gmail.com>
@@ -18,10 +27,7 @@
 -- Modified to minimize extensions and work with Data.Proxy rather
 -- than undefined values by Edward Kmett.
 --
--- Usage reduces to using two combinators.
---
--- > reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
--- > reflect :: Reified s => p s -> Reflected s
+-- Usage reduces to using two combinators, 'reify' and 'reflect'.
 --
 -- > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
 -- > 12
@@ -34,6 +40,7 @@
 
 module Data.Reflection
     (
+    -- * Reifying any term at the type level
       Reified(..)
     , reify
     ) where
@@ -44,7 +51,7 @@ import System.IO.Unsafe
 import Control.Applicative
 import Data.Proxy
 import Data.Bits
-#if __GLASGOW_HASKELL__
+#ifdef __GLASGOW_HASKELL__
 import GHC.Word
 #endif
 
@@ -90,20 +97,23 @@ class B s where
 BYTES(GO)
 #undef GO
 
+impossible :: a
+impossible = error "Data.Reflection.reifyByte: impossible
+
 reifyByte :: Word8 -> (forall s. B s => Proxy s -> w) -> w
-#if __GLASGOW_HASKELL__
+#ifdef __GLASGOW_HASKELL__
 reifyByte (W8# w) k = case w of {
 #define GO(n) n## -> k (Proxy :: Proxy CAT(T,n));
 BYTES(GO)
 #undef GO
-_ -> error "Data.Reflection.reifyByte: impossible"
+_ -> impossible
 }
 #else
 reifyByte w k = case w of {
 #define GO(n) n -> k (Proxy :: Proxy CAT(T,n));
 BYTES(GO)
 #undef GO
-_ -> error "Data.Reflection.reifyByte: impossible"
+_ -> impossible
 }
 #endif
 
@@ -114,15 +124,18 @@ class Reified s where
 newtype Stable b0 b1 b2 b3 b4 b5 b6 b7 a =
   Stable (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
 
-stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5
-       -> p b6 -> p b7 -> Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
+stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5 -> p b6 -> p b7
+       -> Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
 stable _ _ _ _ _ _ _ _ = Proxy
+{-# INLINE stable #-}
 
 stablePtrToIntPtr :: StablePtr a -> IntPtr
 stablePtrToIntPtr = ptrToIntPtr . castStablePtrToPtr
+{-# INLINE stablePtrToIntPtr #-}
 
 intPtrToStablePtr :: IntPtr -> StablePtr a
 intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
+{-# INLINE intPtrToStablePtr #-}
 
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
     => Reified (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) where
@@ -146,7 +159,7 @@ reflectBefore f = const $! f Proxy
 {-# NOINLINE reflectBefore #-}
 
 reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
-reify a k = unsafePerformIO $ do
+reify a k = unsafeDupablePerformIO $ do
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
   reifyByte (fromIntegral n) $ \s0 ->
@@ -159,4 +172,3 @@ reify a k = unsafePerformIO $ do
                 reifyByte (fromIntegral (n `shiftR` 56)) $ \s7 ->
                   reflectBefore (fmap return k) $
                     stable s0 s1 s2 s3 s4 s5 s6 s7
-{-# NOINLINE reify #-}
