@@ -68,7 +68,10 @@ description:
     reduces the need for helper functions and scoped type variables in user
     code.
 
-extra-source-files: examples/Monoid.hs examples/Constraints.hs
+extra-source-files:
+  examples/Monoid.hs
+  examples/Constraints.hs
+  examples/Benchmark.hs
 
 source-repository head
   type: git
