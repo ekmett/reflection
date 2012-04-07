@@ -32,10 +32,12 @@ description:
   /Changes in 0.8/:
   .
   * Switched to using type families to avoid a problem where the user could cast
-    @Proxy (s a) -> Proxy (s b)@ and get back a values with the wrong type since
-    0.6.
+    @Proxy (s a) -> Proxy (s b)@ and get back a values with the wrong type under
+    the API in effect from 0.6. This API yields a much nicer example as well.
   .
   * Removed @reflectT@ as it no longer makes sense.
+  .
+  * Added a more advanced example @example/Constraints.hs@ using constraint kinds.
   .
   /Changes in 0.7/:
   .
@@ -70,18 +72,14 @@ description:
     reduces the need for helper functions and scoped type variables in user
     code.
 
-extra-source-files: examples/Monoid.hs
+extra-source-files: examples/Monoid.hs examples/Constraints.hs
 
 source-repository head
   type: git
   location: git://github.com/ekmett/reflection.git
 
 library
-  other-extensions: 
-    Rank2Types
-    MultiParamTypeClasses
-    FunctionalDependencies
-    FlexibleInstances
+  other-extensions: Rank2Types, TypeFamilies
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3

@@ -13,13 +13,10 @@ instance (Reified s, Reflected s ~ Monoid_ a) => Monoid (M a s) where
   mappend a b        = M $ mappend_ (reflect a) (runM a) (runM b)
   mempty = a where a = M $ mempty_ (reflect a)
 
-reifyMonoid :: (a -> a -> a) -> a -> (forall s. (Reified s, Reflected s ~ Monoid_ a) => Proxy s -> r) -> r
-reifyMonoid f z = reify (Monoid_ f z)
-
 -- > ghci> withMonoid (+) 0 $ mempty <> M 2
 -- > 2
 withMonoid :: (a -> a -> a) -> a -> (forall s. (Reified s, Reflected s ~ Monoid_ a) => M a s) -> a
-withMonoid f z v = reifyMonoid f z (\p -> runM (asProxyOf v p))
+withMonoid f z v = reify (Monoid_ f z) (runM . asProxyOf v)
 
-asProxyOf :: M a s -> Proxy s -> M a s
+asProxyOf :: f s -> Proxy s -> f s
 asProxyOf a _ = a
