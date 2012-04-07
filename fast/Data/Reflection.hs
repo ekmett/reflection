@@ -17,7 +17,7 @@
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
 -- The approach from the paper was modified to work with Data.Proxy
--- and to cheat by using knowledge GHC's internal representations
+-- and to cheat by using knowledge of GHC's internal representations
 -- by Edward Kmett and Elliott Hird.
 --
 -- Usage reduces to using two combinators, 'reify' and 'reflect'.
