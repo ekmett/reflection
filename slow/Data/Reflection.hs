@@ -1,11 +1,4 @@
--- CPP is provided by default-extensions, because it may not work in some compilers to #ifdef a pragma otherwise
-{-# LANGUAGE CPP #-}
-{-# LANGUAGE Rank2Types #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE TypeFamilies #-}
-#ifdef __GLASGOW_HASKELL__
-{-# LANGUAGE MagicHash #-}
-#endif
+{-# LANGUAGE CPP, MultiParamTypeClasses, FunctionalDependencies, FlexibleInstances, Rank2Types, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds #-}
 ----------------------------------------------------------------------------
 -- |
@@ -41,7 +34,7 @@
 module Data.Reflection
     (
     -- * Reifying any term at the type level
-      Reified(..)
+      Reifies(..)
     , reify
     ) where
 
@@ -51,9 +44,7 @@ import System.IO.Unsafe
 import Control.Applicative
 import Data.Proxy
 import Data.Bits
-#ifdef __GLASGOW_HASKELL__
-import GHC.Word
-#endif
+import Data.Word
 
 class B s where
   reflectByte :: p s -> IntPtr
@@ -101,25 +92,15 @@ impossible :: a
 impossible = error "Data.Reflection.reifyByte: impossible"
 
 reifyByte :: Word8 -> (forall s. B s => Proxy s -> w) -> w
-#ifdef __GLASGOW_HASKELL__
-reifyByte (W8# w) k = case w of {
-#define GO(n) n## -> k (Proxy :: Proxy CAT(T,n));
-BYTES(GO)
-#undef GO
-_ -> impossible
-}
-#else
 reifyByte w k = case w of {
 #define GO(n) n -> k (Proxy :: Proxy CAT(T,n));
 BYTES(GO)
 #undef GO
 _ -> impossible
 }
-#endif
 
-class Reified s where
-  type Reflected s
-  reflect :: p s -> Reflected s
+class Reifies s a | s -> a where
+  reflect :: p s -> a
 
 newtype Stable b0 b1 b2 b3 b4 b5 b6 b7 a =
   Stable (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
@@ -138,8 +119,7 @@ intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
 {-# INLINE intPtrToStablePtr #-}
 
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
-    => Reified (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) where
-  type Reflected (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) = a
+    => Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a where
   reflect = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p where
     p = intPtrToStablePtr $
       reflectByte (Proxy :: Proxy b0) .|.
@@ -154,11 +134,11 @@ instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
 
 -- This had to be moved to the top level, due to an apparent bug in
 -- the ghc inliner introduced in ghc 7.0.x
-reflectBefore :: Reified s => (Proxy s -> b) -> proxy s -> b
+reflectBefore :: Reifies s a => (Proxy s -> b) -> proxy s -> b
 reflectBefore f = const $! f Proxy
 {-# NOINLINE reflectBefore #-}
 
-reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
+reify :: a -> (forall s. (Reifies s a) => Proxy s -> w) -> w
 reify a k = unsafeDupablePerformIO $ do
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
