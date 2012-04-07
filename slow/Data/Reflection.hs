@@ -14,7 +14,7 @@
 --
 -- Maintainer  : Edward Kmett <ekmett@gmail.com>
 -- Stability   : experimental
--- Portability : non-portable (rank-2 types, type families, scoped type variables)
+-- Portability : non-portable
 --
 -- Based on the Functional Pearl: Implicit Configurations paper by
 -- Oleg Kiselyov and Chung-chieh Shan.
