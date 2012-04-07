@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, Rank2Types, TypeFamilies #-}
+{-# LANGUAGE CPP, Rank2Types, TypeFamilies, ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-cse -fno-full-laziness -fno-float-in -fno-warn-unused-binds -XMagicHash #-}
 ----------------------------------------------------------------------------
 -- |
@@ -8,15 +8,15 @@
 --
 -- Maintainer  : Edward Kmett <ekmett@gmail.com>
 -- Stability   : experimental
--- Portability : non-portable (rank-2 types, type families)
+-- Portability : non-portable (rank-2 types, type families, scoped type variables)
 --
 -- Based on the Functional Pearl: Implicit Configurations paper by
 -- Oleg Kiselyov and Chung-chieh Shan.
 --
 -- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
 --
--- Modified to minimize extensions and work with Data.Proxy rather than
--- explicit scoped type variables and undefined values by Edward Kmett.
+-- Modified to minimize extensions and work with Data.Proxy rather
+-- than undefined values by Edward Kmett.
 -------------------------------------------------------------------------------
 
 module Data.Reflection
@@ -106,33 +106,6 @@ stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5
        -> p b6 -> p b7 -> Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
 stable _ _ _ _ _ _ _ _ = Proxy
 
-byte0 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b0
-byte0 _ = Proxy
-
-byte1 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b1
-byte1 _ = Proxy
-
-byte2 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b2
-byte2 _ = Proxy
-
-byte3 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b3
-byte3 _ = Proxy
-
-byte4 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b4
-byte4 _ = Proxy
-
-byte5 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b5
-byte5 _ = Proxy
-
-byte6 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b6
-byte6 _ = Proxy
-
-byte7 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b7
-byte7 _ = Proxy
-
-argument :: (p s -> r) -> Proxy s
-argument _ = Proxy
-
 stablePtrToIntPtr :: StablePtr a -> IntPtr
 stablePtrToIntPtr = ptrToIntPtr . castStablePtrToPtr
 
@@ -142,18 +115,16 @@ intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
     => Reified (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) where
   type Reflected (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) = a
-  reflect = r where
-      r = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p
-      s = argument r
-      p = intPtrToStablePtr $
-        reflectByte (byte0 s) .|.
-        (reflectByte (byte1 s) `shiftL` 8) .|.
-        (reflectByte (byte2 s) `shiftL` 16) .|.
-        (reflectByte (byte3 s) `shiftL` 24) .|.
-        (reflectByte (byte4 s) `shiftL` 32) .|.
-        (reflectByte (byte5 s) `shiftL` 40) .|.
-        (reflectByte (byte6 s) `shiftL` 48) .|.
-        (reflectByte (byte7 s) `shiftL` 56)
+  reflect = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p where
+    p = intPtrToStablePtr $
+      reflectByte (Proxy :: Proxy b0) .|.
+      (reflectByte (Proxy :: Proxy b1) `shiftL` 8) .|.
+      (reflectByte (Proxy :: Proxy b2) `shiftL` 16) .|.
+      (reflectByte (Proxy :: Proxy b3) `shiftL` 24) .|.
+      (reflectByte (Proxy :: Proxy b4) `shiftL` 32) .|.
+      (reflectByte (Proxy :: Proxy b5) `shiftL` 40) .|.
+      (reflectByte (Proxy :: Proxy b6) `shiftL` 48) .|.
+      (reflectByte (Proxy :: Proxy b7) `shiftL` 56)
   {-# NOINLINE reflect #-}
 
 -- This had to be moved to the top level, due to an apparent bug in

@@ -78,7 +78,7 @@ source-repository head
   location: git://github.com/ekmett/reflection.git
 
 library
-  other-extensions: CPP, Rank2Types, TypeFamilies
+  other-extensions: CPP, Rank2Types, TypeFamilies, ScopedTypeVariables
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3
