@@ -17,11 +17,23 @@
 --
 -- Modified to minimize extensions and work with Data.Proxy rather
 -- than undefined values by Edward Kmett.
+--
+-- Usage reduces to using two combinators.
+--
+-- > reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
+-- > reflect :: Reified s => p s -> Reflected s
+--
+-- > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
+-- > 12
+--
+-- The argument passed along by reify is just a @data Proxy t =
+-- Proxy@, so all of the information needed to reconstruct your value
+-- has been moved to the type level.  This enables it to be used when
+-- constructing instances (see @examples/Monoid.hs@).
 -------------------------------------------------------------------------------
 
 module Data.Reflection
     (
-    -- * Reifying any term at the type level
       Reified(..)
     , reify
     ) where
