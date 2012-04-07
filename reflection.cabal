@@ -1,5 +1,5 @@
 name:           reflection
-version:        0.8
+version:        0.9
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
@@ -8,26 +8,22 @@ stability:      experimental
 homepage:       http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf
 category:       Data, Reflection, Dependent Types
 synopsis:       Functional Pearl: Implicit Configurations
-copyright:      2009 Edward A. Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan
+copyright:      2009 Edward A. Kmett, 2004 Oleg Kiselyov and Chung-chieh Shan,
+                2012 Elliott Hird
 build-type:     Simple
 cabal-version:  >= 1.6
 description:
   This package provides an implementation of the ideas presented in the paper
   "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and
   Chung-chieh Shan. However, the API has been modified to use @Rank2Types@ and
-  @TypeFamilies@
+  @TypeFamilies@.
   .
-  Usage reduces to using two combinators.
+  /Changes in 0.9/:
   .
-  > reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
-  > reflect :: Reified s => p s -> Reflected s
+  * Faster internal implementation.
   .
-  > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
-  > 12
-  .
-  The argument passed along by reify is just a @data Proxy t = Proxy@, so all of the
-  information needed to reconstruct your value has been moved to the type level.
-  This enables it to be used when constructing instances (See @examples/Monoid.hs@).
+  * Removed @ReifiedNum@, @reflectNum@, and @reifyIntegral@; use the normal
+    API instead.
   .
   /Changes in 0.8/:
   .
@@ -72,14 +68,17 @@ description:
     reduces the need for helper functions and scoped type variables in user
     code.
 
-extra-source-files: examples/Monoid.hs examples/Constraints.hs
+extra-source-files:
+  examples/Monoid.hs
+  examples/Constraints.hs
+  examples/Benchmark.hs
 
 source-repository head
   type: git
   location: git://github.com/ekmett/reflection.git
 
 library
-  other-extensions: Rank2Types, TypeFamilies
+  other-extensions: CPP, Rank2Types, TypeFamilies, ScopedTypeVariables
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3
