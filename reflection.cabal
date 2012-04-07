@@ -82,6 +82,8 @@ extra-source-files:
   examples/Constraints.hs
   examples/Benchmark.hs
   README
+  slow/Data/Reflection.hs
+  fast/Data/Reflection.hs
 
 flag slow
   default: False
