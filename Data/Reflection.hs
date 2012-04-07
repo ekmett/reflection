@@ -25,8 +25,7 @@ module Data.Reflection
       Reified(..)
     , reify
     , reflectT
-    -- * Special cases
-    -- ** Reifying integral values as types
+    -- * Reifying integral values at the type level
     , ReifiedNum(..)
     , reifyIntegral
     ) where
