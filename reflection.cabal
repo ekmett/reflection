@@ -1,5 +1,5 @@
 name:           reflection
-version:        0.7
+version:        0.8
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Oleg Kiselyov and Chung-chieh Shan
@@ -14,24 +14,28 @@ cabal-version:  >= 1.6
 description:
   This package provides an implementation of the ideas presented in the paper
   "Functional Pearl: Implicit Configurations" by Oleg Kiselyov and
-  Chung-chieh Shan. However, the API has been modified to use only
-  one extension: @Rank2Types@
+  Chung-chieh Shan. However, the API has been modified to use @Rank2Types@ and
+  @TypeFamilies@
   .
   Usage reduces to using two combinators.
   .
-  > reify :: a -> (forall s. Reified s => Proxy (s a) -> w) -> w
-  > reflect :: Reified s => p (s a) -> a
+  > reify :: a -> (forall s. (Reified s, Reflected s ~ a) => Proxy s -> w) -> w
+  > reflect :: Reified s => p s -> Reflected s
   .
-  > ghci> reify 6 (\p -> reflect p + reflect p)
+  > ghci> reify 6 (\p -> reflect p + reflect p) :: Int
   > 12
   .
   The argument passed along by reify is just a @data Proxy t = Proxy@, so all of the
   information needed to reconstruct your value has been moved to the type level.
   This enables it to be used when constructing instances (See @examples/Monoid.hs@).
-  An additional combinator that may be more useful when building instances is also
-  supplied.
   .
-  > reflectT :: Reified s => p s a -> a
+  /Changes in 0.8/:
+  .
+  * Switched to using type families to avoid a problem where the user could cast
+    @Proxy (s a) -> Proxy (s b)@ and get back a values with the wrong type since
+    0.6.
+  .
+  * Removed @reflectT@ as it no longer makes sense.
   .
   /Changes in 0.7/:
   .
@@ -73,7 +77,11 @@ source-repository head
   location: git://github.com/ekmett/reflection.git
 
 library
-  other-extensions: Rank2Types
+  other-extensions: 
+    Rank2Types
+    MultiParamTypeClasses
+    FunctionalDependencies
+    FlexibleInstances
   build-depends:
     base >= 4 && < 5,
     tagged >= 0.2.3 && < 0.3

@@ -1,28 +1,25 @@
-{-# LANGUAGE Rank2Types, KindSignatures #-}
+{-# LANGUAGE Rank2Types, TypeFamilies #-}
 import Data.Reflection
 import Data.Monoid
 import Data.Proxy
 
-newtype M (s :: * -> *) a = M { runM :: a }
+-- | Values in our dynamically constructed monoid over 'a'
+newtype M a s = M { runM :: a } deriving (Eq,Ord)
 
+-- | A dictionary describing the contents of a monoid
 data Monoid_ a = Monoid_ { mappend_ :: a -> a -> a, mempty_ :: a }
 
-instance Reified s => Monoid (M s a) where
-  mappend a b = M $ mappend_ (reflectM a) (runM a) (runM b)
-  mempty = r where r = M $ mempty_ $ reflectM r
+instance (Reified s, Reflected s ~ Monoid_ a) => Monoid (M a s) where
+  mappend a b        = M $ mappend_ (reflect a) (runM a) (runM b)
+  mempty = a where a = M $ mempty_ (reflect a)
 
-monoidProxy :: M s a -> Proxy (s (Monoid_ a))
-monoidProxy _ = Proxy
-
-reflectM :: Reified s => M s a -> Monoid_ a
-reflectM m = reflect (monoidProxy m)
-
-reifyMonoid :: (a -> a -> a) -> a -> (forall s. Reified s => Proxy (s (Monoid_ a)) -> r) -> r
+reifyMonoid :: (a -> a -> a) -> a -> (forall s. (Reified s, Reflected s ~ Monoid_ a) => Proxy s -> r) -> r
 reifyMonoid f z = reify (Monoid_ f z)
 
--- > ghci> withMonoid (+) 0 (mempty `mappend` M 2)
+-- > ghci> withMonoid (+) 0 $ mempty <> M 2
 -- > 2
-withMonoid :: (a -> a -> a) -> a -> (forall s. Reified s => M s a) -> a
-withMonoid f z v = reifyMonoid f z (\p -> runM (v `asProxyOf` p)) where
-  asProxyOf :: M s x -> Proxy (s (Monoid_ x)) -> M s x
-  asProxyOf a _ = a
+withMonoid :: (a -> a -> a) -> a -> (forall s. (Reified s, Reflected s ~ Monoid_ a) => M a s) -> a
+withMonoid f z v = reifyMonoid f z (\p -> runM (asProxyOf v p))
+
+asProxyOf :: M a s -> Proxy s -> M a s
+asProxyOf a _ = a
