@@ -76,7 +76,7 @@ library
   if impl(ghc) && !flag(slow)
     hs-source-dirs: fast
   else
-    other-extensions: ScopedTypeVariables, FlexibleInstances
+    other-extensions: ScopedTypeVariables, FlexibleInstances, CPP
     hs-source-dirs: slow
 
   other-extensions: MultiParamTypeClasses, FunctionalDependencies, Rank2Types
