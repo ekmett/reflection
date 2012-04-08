@@ -7,8 +7,7 @@ maintainer:     Edward A. Kmett <ekmett@gmail.com>
 stability:      experimental
 homepage:       http://github.com/ekmett/reflection
 category:       Data, Reflection, Dependent Types
-synopsis:       Reifies arbitrary terms into types that can be reflected back
-                into terms
+synopsis:       Reifies arbitrary terms into types that can be reflected back into terms
 copyright:      2009-2012 Edward A. Kmett,
                 2012 Elliott Hird,
                 2004 Oleg Kiselyov and Chung-chieh Shan
