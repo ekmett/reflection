@@ -1,7 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
-{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
 {-# OPTIONS_GHC -fno-cse #-}
@@ -53,6 +52,10 @@ import Control.Applicative
 import Data.Proxy
 import Data.Bits
 import Data.Word
+
+#ifdef __HUGS__
+#define unsafeDupablePerformIO unsafePerformIO
+#endif
 
 class B s where
   reflectByte :: proxy s -> IntPtr
@@ -128,18 +131,47 @@ intPtrToStablePtr :: IntPtr -> StablePtr a
 intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
 {-# INLINE intPtrToStablePtr #-}
 
+byte0 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b0
+byte0 _ = Proxy
+
+byte1 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b1
+byte1 _ = Proxy
+
+byte2 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b2
+byte2 _ = Proxy
+
+byte3 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b3
+byte3 _ = Proxy
+
+byte4 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b4
+byte4 _ = Proxy
+
+byte5 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b5
+byte5 _ = Proxy
+
+byte6 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b6
+byte6 _ = Proxy
+
+byte7 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b7
+byte7 _ = Proxy
+
+argument :: (p s -> r) -> Proxy s
+argument _ = Proxy
+
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
     => Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a where
-  reflect = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p where
-    p = intPtrToStablePtr $
-      reflectByte (Proxy :: Proxy b0) .|.
-      (reflectByte (Proxy :: Proxy b1) `shiftL` 8) .|.
-      (reflectByte (Proxy :: Proxy b2) `shiftL` 16) .|.
-      (reflectByte (Proxy :: Proxy b3) `shiftL` 24) .|.
-      (reflectByte (Proxy :: Proxy b4) `shiftL` 32) .|.
-      (reflectByte (Proxy :: Proxy b5) `shiftL` 40) .|.
-      (reflectByte (Proxy :: Proxy b6) `shiftL` 48) .|.
-      (reflectByte (Proxy :: Proxy b7) `shiftL` 56)
+  reflect = r where
+      r = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p
+      s = argument r
+      p = intPtrToStablePtr $
+        reflectByte (byte0 s) .|.
+        (reflectByte (byte1 s) `shiftL` 8) .|.
+        (reflectByte (byte2 s) `shiftL` 16) .|.
+        (reflectByte (byte3 s) `shiftL` 24) .|.
+        (reflectByte (byte4 s) `shiftL` 32) .|.
+        (reflectByte (byte5 s) `shiftL` 40) .|.
+        (reflectByte (byte6 s) `shiftL` 48) .|.
+        (reflectByte (byte7 s) `shiftL` 56)
   {-# NOINLINE reflect #-}
 
 -- This had to be moved to the top level, due to an apparent bug in
@@ -153,13 +185,13 @@ reify :: a -> (forall s. (Reifies s a) => Proxy s -> r) -> r
 reify a k = unsafeDupablePerformIO $ do
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
-  reifyByte (fromIntegral n) $ \s0 ->
-    reifyByte (fromIntegral (n `shiftR` 8)) $ \s1 ->
-      reifyByte (fromIntegral (n `shiftR` 16)) $ \s2 ->
-        reifyByte (fromIntegral (n `shiftR` 24)) $ \s3 ->
-          reifyByte (fromIntegral (n `shiftR` 32)) $ \s4 ->
-            reifyByte (fromIntegral (n `shiftR` 40)) $ \s5 ->
-              reifyByte (fromIntegral (n `shiftR` 48)) $ \s6 ->
-                reifyByte (fromIntegral (n `shiftR` 56)) $ \s7 ->
+  reifyByte (fromIntegral n) (\s0 ->
+    reifyByte (fromIntegral (n `shiftR` 8)) (\s1 ->
+      reifyByte (fromIntegral (n `shiftR` 16)) (\s2 ->
+        reifyByte (fromIntegral (n `shiftR` 24)) (\s3 ->
+          reifyByte (fromIntegral (n `shiftR` 32)) (\s4 ->
+            reifyByte (fromIntegral (n `shiftR` 40)) (\s5 ->
+              reifyByte (fromIntegral (n `shiftR` 48)) (\s6 ->
+                reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   reflectBefore (fmap return k) $
-                    stable s0 s1 s2 s3 s4 s5 s6 s7
+                    stable s0 s1 s2 s3 s4 s5 s6 s7))))))))

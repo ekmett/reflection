@@ -1,5 +1,5 @@
 name:           reflection
-version:        1.1.4
+version:        1.1.5
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Elliott Hird, Oleg Kiselyov and Chung-chieh Shan
@@ -20,6 +20,12 @@ description:
   .
   The original paper can be obtained from
   <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>.
+  .
+  /Changes in 1.1.5/:
+  .
+  * Both implementations now work on Hugs; the fast implementation ascends
+    from the ranks of completely unportable black magic to being merely
+    /mostly/ unportable black magic.
   .
   /Changes from 0.5 to 1.1/:
   .
@@ -67,17 +73,21 @@ library
     default-extensions: Trustworthy
 
   build-depends:
-    base >= 4 && < 5,
+    base >= 2 && < 5,
     tagged >= 0.2.3 && < 0.5
 
   default-language: Haskell98
 
-  if impl(ghc) && !flag(slow)
+  if !flag(slow) && (impl(ghc) || impl(hugs))
     hs-source-dirs: fast
   else
-    other-extensions: ScopedTypeVariables, FlexibleInstances, CPP
+    other-extensions: ScopedTypeVariables, FlexibleInstances
     hs-source-dirs: slow
 
-  other-extensions: MultiParamTypeClasses, FunctionalDependencies, Rank2Types
+  other-extensions:
+    MultiParamTypeClasses,
+    FunctionalDependencies,
+    Rank2Types,
+    CPP
 
   exposed-modules: Data.Reflection

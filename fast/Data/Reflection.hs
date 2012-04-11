@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE Rank2Types #-}
@@ -40,7 +41,12 @@ module Data.Reflection
     ) where
 
 import Data.Proxy
+
+#ifdef __HUGS__
+import Hugs.IOExts
+#else
 import Unsafe.Coerce
+#endif
 
 class Reifies s a | s -> a where
   -- | Recover a value inside a 'reify' context, given a proxy for its
