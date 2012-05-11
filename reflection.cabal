@@ -1,11 +1,12 @@
 name:           reflection
-version:        1.1.5
+version:        1.1.5.1
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Elliott Hird, Oleg Kiselyov and Chung-chieh Shan
 maintainer:     Edward A. Kmett <ekmett@gmail.com>
 stability:      experimental
 homepage:       http://github.com/ekmett/reflection
+bug-reports:    http://github.com/ekmett/reflection/issues
 category:       Data, Reflection, Dependent Types
 synopsis:       Reifies arbitrary terms into types that can be reflected back into terms
 copyright:      2009-2012 Edward A. Kmett,
@@ -57,6 +58,7 @@ extra-source-files:
   README
   slow/Data/Reflection.hs
   fast/Data/Reflection.hs
+  .travis.yml
 
 flag slow
   default: False
