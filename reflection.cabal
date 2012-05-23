@@ -22,6 +22,10 @@ description:
   The original paper can be obtained from
   <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>.
   .
+  /Changes in 1.1.6/:
+  .
+  * Relaxed an unnecessary strictness annotation in the fast implementation
+  .
   /Changes in 1.1.5/:
   .
   * Both implementations now work on Hugs; the fast implementation ascends
