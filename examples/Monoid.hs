@@ -1,4 +1,4 @@
-{-# LANGUAGE Rank2Types, FlexibleContextsUndecidableInstances #-}
+{-# LANGUAGE Rank2Types, FlexibleContexts, UndecidableInstances #-}
 import Data.Reflection -- from reflection
 import Data.Monoid     -- from base
 import Data.Proxy      -- from tagged

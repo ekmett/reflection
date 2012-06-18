@@ -44,9 +44,34 @@ instance Reifies s (Def Monoid a) => Monoid (Lift Monoid a s) where
   mappend a b        = Lift $ mappend_ (reflect a) (lower a) (lower b)
   mempty = a where a = Lift $ mempty_ (reflect a)
 
+data ClassProxy (p :: * -> Constraint) = ClassProxy
+
+given :: ClassProxy c -> p s -> a -> Lift c a s
+given _ _ = Lift
+
+eq :: ClassProxy Eq
+eq = ClassProxy
+
+ord :: ClassProxy Ord
+ord = ClassProxy
+
+monoid :: ClassProxy Monoid
+monoid = ClassProxy
+
 instance ReifiableConstraint Eq where
   data Def Eq a = Eq { eq_ :: a -> a -> Bool }
   reifiedIns = Sub Dict
 
 instance Reifies s (Def Eq a) => Eq (Lift Eq a s) where
   a == b = eq_ (reflect a) (lower a) (lower b)
+
+instance ReifiableConstraint Ord where
+  data Def Ord a = Ord { compare_ :: a -> a -> Ordering }
+  reifiedIns = Sub Dict
+
+instance Reifies s (Def Ord a) => Eq (Lift Ord a s) where
+  a == b = compare a b == EQ
+
+instance Reifies s (Def Ord a) => Ord (Lift Ord a s) where
+  compare a b = compare_ (reflect a) (lower a) (lower b)
+
