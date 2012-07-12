@@ -59,7 +59,7 @@ extra-source-files:
   examples/Monoid.hs
   examples/Constraints.hs
   examples/Benchmark.hs
-  README
+  README.markdown
   slow/Data/Reflection.hs
   fast/Data/Reflection.hs
   .travis.yml
