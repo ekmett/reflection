@@ -1,11 +1,12 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Rank2Types #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
--- Copyright  : 2009-2012 Edward Kmett,
+-- Copyright  : 2009-2013 Edward Kmett,
 --              2012 Elliott Hird,
 --              2004 Oleg Kiselyov and Chung-chieh Shan
 -- License    : BSD3
@@ -56,5 +57,5 @@ class Reifies s a | s -> a where
 newtype Magic a r = Magic (forall s. Reifies s a => Proxy s -> r)
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
-reify :: a -> (forall s. Reifies s a => Proxy s -> r) -> r
-reify a k = unsafeCoerce (Magic k) (const a) Proxy
+reify :: forall a r. a -> (forall s. Reifies s a => Proxy s -> r) -> r
+reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
