@@ -9,7 +9,7 @@ homepage:       http://github.com/ekmett/reflection
 bug-reports:    http://github.com/ekmett/reflection/issues
 category:       Data, Reflection, Dependent Types
 synopsis:       Reifies arbitrary terms into types that can be reflected back into terms
-copyright:      2009-2012 Edward A. Kmett,
+copyright:      2009-2013 Edward A. Kmett,
                 2012 Elliott Hird,
                 2004 Oleg Kiselyov and Chung-chieh Shan
 build-type:     Simple
