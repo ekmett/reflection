@@ -59,3 +59,4 @@ newtype Magic a r = Magic (forall s. Reifies s a => Proxy s -> r)
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall s. Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+{-# INLINE reify #-}
