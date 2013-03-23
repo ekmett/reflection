@@ -34,11 +34,18 @@
 -- Proxy@, so all of the information needed to reconstruct your value
 -- has been moved to the type level.  This enables it to be used when
 -- constructing instances (see @examples/Monoid.hs@).
+--
+-- In addition, a simpler API is offered for working with singleton
+-- values such as a system configuration, etc.
 -------------------------------------------------------------------------------
 module Data.Reflection
     (
+    -- * Reflection
       Reifies(..)
     , reify
+    -- * Given
+    , Given(..)
+    , give
     ) where
 
 import Data.Proxy
@@ -48,6 +55,10 @@ import Hugs.IOExts
 #else
 import Unsafe.Coerce
 #endif
+
+------------------------------------------------------------------------------
+-- Reifies
+------------------------------------------------------------------------------
 
 class Reifies s a | s -> a where
   -- | Recover a value inside a 'reify' context, given a proxy for its
@@ -60,3 +71,25 @@ newtype Magic a r = Magic (forall s. Reifies s a => Proxy s -> r)
 reify :: forall a r. a -> (forall s. Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
 {-# INLINE reify #-}
+
+------------------------------------------------------------------------------
+-- Given
+------------------------------------------------------------------------------
+
+-- | This is a version of 'Reifies' that allows for only a single value.
+--
+-- This is easier to work with than 'Reifies' and permits extended defaulting,
+-- but it only offers a single reflected value of a given type at a time.
+class Given a where
+  -- | Recover the value of a given type previously encoded with 'give'.
+  given :: a
+
+newtype Gift a r = Gift (Given a => r)
+
+-- | Reify a value into an instance to be recovered with 'given'.
+--
+-- You should only 'give' a single value for each type. If multiple instances
+-- are in scope, then the behavior is implementation defined.
+give :: forall a r. a -> (Given a => r) -> r
+give a k = unsafeCoerce (Gift k :: Gift a r) a
+{-# INLINE give #-}
