@@ -32,6 +32,10 @@ extra-source-files:
   fast/Data/Reflection.hs
   .travis.yml
 
+-- If you enable this flag, we use a more portable much much slower implementation.
+-- Moreover, the 'Given' API is broken, so this is currently an unsupported configuration.
+--
+-- If you feel the need to turn on this flag for any reason, please email the maintainer!
 flag slow
   default: False
   manual: False
