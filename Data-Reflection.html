@@ -1,0 +1,34 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"><html xmlns="http://www.w3.org/1999/xhtml"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8" /><title>Data.Reflection</title><link href="ocean.css" rel="stylesheet" type="text/css" title="Ocean" /><script src="haddock-util.js" type="text/javascript"></script><script type="text/javascript">//<![CDATA[
+window.onload = function () {pageLoad();setSynopsis("mini_Data-Reflection.html");};
+//]]>
+</script></head><body><div id="package-header"><ul class="links" id="page-menu"><li><a href="src/Data-Reflection.html">Source</a></li><li><a href="index.html">Contents</a></li><li><a href="doc-index.html">Index</a></li></ul><p class="caption">reflection-1.2: Reifies arbitrary terms into types that can be reflected back into terms</p></div><div id="content"><div id="module-header"><table class="info"><tr><th>Portability</th><td>non-portable</td></tr><tr><th>Stability</th><td>experimental</td></tr><tr><th>Maintainer</th><td>Edward Kmett &lt;ekmett@gmail.com&gt;</td></tr><tr><th>Safe Haskell</th><td>Trustworthy</td></tr></table><p class="caption">Data.Reflection</p></div><div id="table-of-contents"><p class="caption">Contents</p><ul><li><a href="#g:1">Reflection
+</a></li><li><a href="#g:2">Given
+</a></li></ul></div><div id="description"><p class="caption">Description</p><div class="doc"><p>Reifies arbitrary terms at the type level. Based on the Functional
+ Pearl: Implicit Configurations paper by Oleg Kiselyov and
+ Chung-chieh Shan.
+</p><p><a href="http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf">http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf</a>
+</p><p>The approach from the paper was modified to work with Data.Proxy
+ and to cheat by using knowledge of GHC's internal representations
+ by Edward Kmett and Elliott Hird.
+</p><p>Usage comes down to two combinators, <code><a href="Data-Reflection.html#v:reify">reify</a></code> and <code><a href="Data-Reflection.html#v:reflect">reflect</a></code>.
+</p><pre class="screen"><code class="prompt">&gt;&gt;&gt; </code><strong class="userinput"><code>reify 6 (\p -&gt; reflect p + reflect p)
+</code></strong>12
+</pre><p>The argument passed along by reify is just a <code>data <code>Proxy</code> t =
+ Proxy</code>, so all of the information needed to reconstruct your value
+ has been moved to the type level.  This enables it to be used when
+ constructing instances (see <code>examples/Monoid.hs</code>).
+</p><p>In addition, a simpler API is offered for working with singleton
+ values such as a system configuration, etc.
+</p></div></div><div id="synopsis"><p id="control.syn" class="caption expander" onclick="toggleSection('syn')">Synopsis</p><ul id="section.syn" class="hide" onclick="toggleSection('syn')"><li class="src short"><span class="keyword">class</span>  <a href="#t:Reifies">Reifies</a> s a | s -&gt; a <span class="keyword">where</span><ul class="subs"><li><a href="#v:reflect">reflect</a> ::  proxy s -&gt; a</li></ul></li><li class="src short"><a href="#v:reify">reify</a> :: <span class="keyword">forall</span> a r.  a -&gt; (<span class="keyword">forall</span> s. <a href="Data-Reflection.html#t:Reifies">Reifies</a> s a =&gt; Proxy s -&gt; r) -&gt; r</li><li class="src short"><span class="keyword">class</span>  <a href="#t:Given">Given</a> a  <span class="keyword">where</span><ul class="subs"><li><a href="#v:given">given</a> :: a</li></ul></li><li class="src short"><a href="#v:give">give</a> :: <span class="keyword">forall</span> a r.  a -&gt; (<a href="Data-Reflection.html#t:Given">Given</a> a =&gt; r) -&gt; r</li></ul></div><div id="interface"><h1 id="g:1">Reflection
+</h1><div class="top"><p class="src"><span class="keyword">class</span>  <a name="t:Reifies" class="def">Reifies</a> s a | s -&gt; a <span class="keyword">where</span><a href="src/Data-Reflection.html#Reifies" class="link">Source</a></p><div class="subs methods"><p class="caption">Methods</p><p class="src"><a name="v:reflect" class="def">reflect</a> ::  proxy s -&gt; a<a href="src/Data-Reflection.html#reflect" class="link">Source</a></p><div class="doc"><p>Recover a value inside a <code><a href="Data-Reflection.html#v:reify">reify</a></code> context, given a proxy for its
+ reified type.
+</p></div></div></div><div class="top"><p class="src"><a name="v:reify" class="def">reify</a> :: <span class="keyword">forall</span> a r.  a -&gt; (<span class="keyword">forall</span> s. <a href="Data-Reflection.html#t:Reifies">Reifies</a> s a =&gt; Proxy s -&gt; r) -&gt; r<a href="src/Data-Reflection.html#reify" class="link">Source</a></p><div class="doc"><p>Reify a value at the type level, to be recovered with <code><a href="Data-Reflection.html#v:reflect">reflect</a></code>.
+</p></div></div><h1 id="g:2">Given
+</h1><div class="top"><p class="src"><span class="keyword">class</span>  <a name="t:Given" class="def">Given</a> a  <span class="keyword">where</span><a href="src/Data-Reflection.html#Given" class="link">Source</a></p><div class="doc"><p>This is a version of <code><a href="Data-Reflection.html#t:Reifies">Reifies</a></code> that allows for only a single value.
+</p><p>This is easier to work with than <code><a href="Data-Reflection.html#t:Reifies">Reifies</a></code> and permits extended defaulting,
+ but it only offers a single reflected value of a given type at a time.
+</p></div><div class="subs methods"><p class="caption">Methods</p><p class="src"><a name="v:given" class="def">given</a> :: a<a href="src/Data-Reflection.html#given" class="link">Source</a></p><div class="doc"><p>Recover the value of a given type previously encoded with <code><a href="Data-Reflection.html#v:give">give</a></code>.
+</p></div></div></div><div class="top"><p class="src"><a name="v:give" class="def">give</a> :: <span class="keyword">forall</span> a r.  a -&gt; (<a href="Data-Reflection.html#t:Given">Given</a> a =&gt; r) -&gt; r<a href="src/Data-Reflection.html#give" class="link">Source</a></p><div class="doc"><p>Reify a value into an instance to be recovered with <code><a href="Data-Reflection.html#v:given">given</a></code>.
+</p><p>You should only <code><a href="Data-Reflection.html#v:give">give</a></code> a single value for each type. If multiple instances
+ are in scope, then the behavior is implementation defined.
+</p></div></div></div></div><div id="footer"><p>Produced by <a href="http://www.haskell.org/haddock/">Haddock</a> version 2.10.0</p></div></body></html>
