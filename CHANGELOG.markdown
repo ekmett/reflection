@@ -1,3 +1,6 @@
+# 1.2
+* Added `Given` and give.
+
 # 1.1.7
 * Fixed an issue caused by changes in GHC 7.7's typechecker by using explicit `ScopedTypeVariables`.
 
