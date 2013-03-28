@@ -1,5 +1,5 @@
 name:           reflection
-version:        1.2
+version:        1.2.0.1
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Elliott Hird, Oleg Kiselyov and Chung-chieh Shan
@@ -52,7 +52,7 @@ library
 
   build-depends:
     base >= 2 && < 5,
-    tagged >= 0.4.4 && < 0.5
+    tagged >= 0.4.4 && < 1
 
   default-language: Haskell98
 
