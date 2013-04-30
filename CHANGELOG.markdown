@@ -1,3 +1,6 @@
+# 1.3
+* Merged some functionality from Data.Analytics.Reflection. Notably the ability to use type nats to reflect numbers, and to splice numbers directly. This reduces orphan instances somewhat.
+
 # 1.2
 * Added `Given` and give.
 
