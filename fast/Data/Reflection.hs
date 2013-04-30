@@ -89,10 +89,10 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
-newtype Magic a r = Magic (forall s. Reifies s a => Proxy s -> r)
+newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
-reify :: forall a r. a -> (forall s. Reifies s a => Proxy s -> r) -> r
+reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
 {-# INLINE reify #-}
 
@@ -117,7 +117,6 @@ newtype Gift a r = Gift (Given a => r)
 give :: forall a r. a -> (Given a => r) -> r
 give a k = unsafeCoerce (Gift k :: Gift a r) a
 {-# INLINE give #-}
-
 
 data Z -- 0
 data D  (n :: *) -- 2n
