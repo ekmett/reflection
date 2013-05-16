@@ -171,6 +171,10 @@ nat n
   | n >= 0 = int n
   | otherwise = error "nat: negative"
 
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL < 704
+instance Show (Q a)
+instance Eq (Q a)
+#endif
 instance Num a => Num (Q a) where
   (+) = liftM2 (+)
   (*) = liftM2 (*)
