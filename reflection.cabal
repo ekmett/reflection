@@ -1,5 +1,5 @@
 name:           reflection
-version:        1.3.2
+version:        1.3.2.1
 license:        BSD3
 license-file:   LICENSE
 author:         Edward A. Kmett, Elliott Hird, Oleg Kiselyov and Chung-chieh Shan
@@ -73,4 +73,10 @@ library
     Rank2Types,
     CPP
 
-  exposed-modules: Data.Reflection
+  if !flag(slow) && (impl(ghc) || impl(hugs))
+    exposed-modules: 
+      Data.Reflection
+      Data.Reflection.Tagged
+  else
+    exposed-modules: 
+      Data.Reflection
