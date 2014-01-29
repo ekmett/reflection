@@ -235,7 +235,7 @@ onProxyType1 f a =
           na = VarT (mkName "na")
 
 onProxyType2 :: Name -> (Type -> Type -> Type) -> (Exp -> Exp -> Exp)
-onProxyType2 fName f
+onProxyType2 _fName f
     (SigE _ (AppT (ConT proxyName)  ta))
     (SigE _ (AppT (ConT proxyName') tb))
     | proxyName == ''Proxy,
@@ -264,11 +264,15 @@ mulProxy _ _ = Proxy
 subProxy :: Proxy a -> Proxy b -> Proxy (a - b)
 subProxy _ _ = Proxy
 #else
+subProxy :: Proxy a -> Proxy b -> Proxy c
 subProxy _ _ = error "Exp.(-): undefined"
 #endif
 --  fromInteger = LitT . NumTyLit
 #else
+addProxy :: Proxy a -> Proxy b -> Proxy c
 addProxy _ _ = error "Exp.(+): undefined"
+mulProxy :: Proxy a -> Proxy b -> Proxy c
 mulProxy _ _ = error "Exp.(*): undefined"
+subProxy :: Proxy a -> Proxy b -> Proxy c
 subProxy _ _ = error "Exp.(-): undefined"
 #endif
