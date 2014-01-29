@@ -1,3 +1,7 @@
+
+# 1.4
+* Changed the behavior of the $(1) template haskell splices for Exp to use a Proxy rather than value-level numbers. This is more consistent with the role of this libraary and the other could always be generated via sa splice anyways.
+
 # 1.3.1
 * Added a workaround for changes in the behavior of the internal 'Magic' datatype under the current GHC PolyKinds implementation.
 
