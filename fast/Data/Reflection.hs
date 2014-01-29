@@ -1,3 +1,4 @@
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -155,6 +156,11 @@ instance Reifies n Int => Reifies (PD n) Int where
 --
 -- This does not use GHC TypeLits, instead it generates a numeric type by hand similar to the ones used
 -- in the \"Functional Pearl: Implicit Configurations\" paper by Oleg Kiselyov and Chung-Chieh Shan.
+--
+-- @instance Num (Q Exp)@ provided in this package allows writing @$(3)@
+-- instead of @$(int 3)@. Sometimes the two will produce the same
+-- representation (if compiled without the @-DUSE_TYPE_LITS@ preprocessor
+-- directive).
 int :: Int -> TypeQ
 int n = case quotRem n 2 of
   (0, 0) -> conT ''Z
@@ -192,7 +198,10 @@ instance Fractional a => Fractional (Q a) where
 -- | This permits the use of $(5) as a type splice.
 instance Num Type where
 #ifdef USE_TYPE_LITS
+  LitT (NumTyLit a) + LitT (NumTyLit b) = LitT (NumTyLit (a+b))
   a + b = AppT (AppT (VarT ''(+)) a) b
+
+  LitT (NumTyLit a) * LitT (NumTyLit b) = LitT (NumTyLit (a*b))
   a * b = AppT (AppT (VarT ''(*)) a) b
 #if MIN_VERSION_base(4,8,0)
   a - b = AppT (AppT (VarT ''(-)) a) b
@@ -214,24 +223,52 @@ instance Num Type where
   abs = error "Type.abs"
   signum = error "Type.signum"
 
-plus, times, minus :: Num a => a -> a -> a
-plus = (+)
-times = (*)
-minus = (-)
-fract :: Fractional a => a -> a -> a
-fract = (/)
 
--- | This permits the use of $(5) as an expression splice.
+onProxyType1 :: (Type -> Type) -> (Exp -> Exp)
+onProxyType1 f
+    (SigE _ ta@(AppT (ConT proxyName)  (VarT _)))
+    | proxyName == ''Proxy = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f ta)
+onProxyType1 f a =
+        LamE [SigP WildP na] body `AppE` a
+    where 
+          body = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f na)
+          na = VarT (mkName "na")
+
+onProxyType2 :: Name -> (Type -> Type -> Type) -> (Exp -> Exp -> Exp)
+onProxyType2 fName f
+    (SigE _ (AppT (ConT proxyName)  ta))
+    (SigE _ (AppT (ConT proxyName') tb))
+    | proxyName == ''Proxy,
+      proxyName' == ''Proxy = ConE 'Proxy `SigE`
+                                        (ConT ''Proxy `AppT` f ta tb)
+-- the above case should only match for things like $(2 + 2)
+onProxyType2 fName _f a b = VarE fName `AppE` a `AppE` b
+
+-- | This permits the use of $(5) as an expression splice,
+-- which stands for @Proxy :: Proxy $(5)@
 instance Num Exp where
-  a + b = AppE (AppE (VarE 'plus) a) b
-  a * b = AppE (AppE (VarE 'times) a) b
-  a - b = AppE (AppE (VarE 'minus) a) b
-  negate = AppE (VarE 'negate)
-  signum = AppE (VarE 'signum)
-  abs = AppE (VarE 'abs)
-  fromInteger = LitE . IntegerL
+  (+) = onProxyType2 'addProxy (+)
+  (*) = onProxyType2 'mulProxy (*)
+  (-) = onProxyType2 'subProxy (-)
+  negate = onProxyType1 negate
+  abs = onProxyType1 abs
+  signum = onProxyType1 signum
+  fromInteger n = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` fromInteger n)
 
-instance Fractional Exp where
-  a / b = AppE (AppE (VarE 'fract) a) b
-  recip = AppE (VarE 'recip)
-  fromRational = LitE . RationalL
+#ifdef USE_TYPE_LITS
+addProxy :: Proxy a -> Proxy b -> Proxy (a + b)
+addProxy _ _ = Proxy
+mulProxy :: Proxy a -> Proxy b -> Proxy (a * b)
+mulProxy _ _ = Proxy
+#if MIN_VERSION_base(4,8,0)
+subProxy :: Proxy a -> Proxy b -> Proxy (a - b)
+subProxy _ _ = Proxy
+#else
+subProxy _ _ = error "Exp.(-): undefined"
+#endif
+--  fromInteger = LitT . NumTyLit
+#else
+addProxy _ _ = error "Exp.(+): undefined"
+mulProxy _ _ = error "Exp.(*): undefined"
+subProxy _ _ = error "Exp.(-): undefined"
+#endif
