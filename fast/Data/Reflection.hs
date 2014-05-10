@@ -1,12 +1,13 @@
-{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE EmptyDataDecls #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
@@ -71,12 +72,13 @@ module Data.Reflection
 import Data.Functor
 import Data.Proxy
 
+#if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (TEMPLATE_HASKELL && USE_TYPE_LITS)
+import GHC.TypeLits
+#endif
+
 #ifdef TEMPLATE_HASKELL
 import Language.Haskell.TH hiding (reify)
 import Control.Monad
-#ifdef USE_TYPE_LITS
-import GHC.TypeLits
-#endif
 #endif
 
 #ifdef __HUGS__
@@ -84,7 +86,6 @@ import Hugs.IOExts
 #else
 import Unsafe.Coerce
 #endif
-
 
 ------------------------------------------------------------------------------
 -- Reifies
@@ -101,6 +102,14 @@ newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
 {-# INLINE reify #-}
+
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+instance KnownNat n => Reifies n Integer where
+  reflect = natVal
+
+instance KnownSymbol n => Reifies n String where
+  reflect = symbolVal
+#endif
 
 ------------------------------------------------------------------------------
 -- Given
