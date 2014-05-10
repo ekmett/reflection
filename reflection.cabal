@@ -60,13 +60,13 @@ library
 
   build-depends:
     base >= 2 && < 5,
-    tagged >= 0.4.4 && < 1,
-    template-haskell
+    tagged >= 0.4.4 && < 1
 
   default-language: Haskell98
 
   if flag(th) && impl(ghc)
     cpp-options: -DTEMPLATE_HASKELL
+    build-depends: template-haskell
 
   if !flag(slow) && (impl(ghc) || impl(hugs))
     hs-source-dirs: fast
