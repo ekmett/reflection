@@ -1,3 +1,6 @@
+# 1.5
+* Added a flag to disable `template-haskell` support for GHC stage1 platforms.
+* Added instances of `Reifies` for `GHC.TypeLits`
 
 # 1.4
 * Changed the behavior of the $(1) template haskell splices for Exp to use a Proxy rather than value-level numbers. This is more consistent with the role of this libraary and the other could always be generated via sa splice anyways.
