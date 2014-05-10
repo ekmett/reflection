@@ -7,12 +7,14 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE EmptyDataDecls #-}
-{-# LANGUAGE TemplateHaskell #-}
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
 #define USE_TYPE_LITS 1
+#endif
+#ifdef TEMPLATE_HASKELL
+{-# LANGUAGE TemplateHaskell #-}
 #endif
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 ----------------------------------------------------------------------------
@@ -58,21 +60,24 @@ module Data.Reflection
     -- * Given
     , Given(..)
     , give
+#ifdef TEMPLATE_HASKELL
     -- * Template Haskell reflection
     , int, nat
+#endif
     -- * Useful compile time naturals
     , Z, D, SD, PD
     ) where
 
-import Control.Monad
 import Data.Functor
 import Data.Proxy
 
+#ifdef TEMPLATE_HASKELL
+import Language.Haskell.TH hiding (reify)
+import Control.Monad
 #ifdef USE_TYPE_LITS
 import GHC.TypeLits
 #endif
-
-import Language.Haskell.TH hiding (reify)
+#endif
 
 #ifdef __HUGS__
 import Hugs.IOExts
@@ -152,6 +157,7 @@ instance Reifies n Int => Reifies (PD n) Int where
   reflect = (\n -> n + n - 1) <$> retagPD reflect
   {-# INLINE reflect #-}
 
+#ifdef TEMPLATE_HASKELL
 -- | This can be used to generate a template haskell splice for a type level version of a given 'int'.
 --
 -- This does not use GHC TypeLits, instead it generates a numeric type by hand similar to the ones used
@@ -178,8 +184,10 @@ nat n
   | otherwise = error "nat: negative"
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL < 704
-instance Show (Q a)
-instance Eq (Q a)
+instance Show (Q a) where
+  show _ = "Q"
+instance Eq (Q a) where
+  _ == _ = False
 #endif
 instance Num a => Num (Q a) where
   (+) = liftM2 (+)
@@ -222,7 +230,6 @@ instance Num Type where
 #endif
   abs = error "Type.abs"
   signum = error "Type.signum"
-
 
 onProxyType1 :: (Type -> Type) -> (Exp -> Exp)
 onProxyType1 f
@@ -275,4 +282,6 @@ mulProxy :: Proxy a -> Proxy b -> Proxy c
 mulProxy _ _ = error "Exp.(*): undefined"
 subProxy :: Proxy a -> Proxy b -> Proxy c
 subProxy _ _ = error "Exp.(-): undefined"
+#endif
+
 #endif
