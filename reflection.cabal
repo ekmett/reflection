@@ -15,16 +15,59 @@ copyright:      2009-2013 Edward A. Kmett,
 build-type:     Simple
 cabal-version:  >= 1.10
 description:
-  This package provides an implementation of the ideas presented in the paper
-  \"Functional Pearl: Implicit Configurations\" by Oleg Kiselyov and
-  Chung-chieh Shan. However, the API has been streamlined to improve performance.
+  This package addresses the /configuration problem/ which is
+  propogating configurations that are available at run-time, allowing
+  multible configurations to coexist without resorting to mutable
+  global variables or 'System.IO.Unsafe.unsafePerformIO'.
   .
-  The original paper can be obtained from
-  <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>.
+  An example is modular arithmetic where the modulus itself can be
+  supplied at run-time:
   .
-  For a summary of the approach taken by this library, along with more motivating
-  examples, see Austin Seipp's tutorial at
-  <https://www.fpcomplete.com/user/thoughtpolice/using-reflection>.
+  @
+    foo :: Modular s => Modulus s
+    foo = 1000 * 1000 * 5 + 2000
+  @ 
+  >>> withModulus 1280 foo
+  1040
+  .
+  given the following setup:
+  .
+  @
+    &#123;-# LANGUAGE ScopedTypeVariables, RankNTypes, ConstraintKinds, FlexibleContexts, UndecidableInstances #-&#125;
+  .
+    import Data.Proxy      (Proxy(Proxy))
+    import Data.Reflection (Reifies, reflect, reify)
+  @
+  .
+  and definitions:
+  .
+  @
+    data Modulus s = M &#123; getModulus :: Integer &#125;
+    type Modular s = 'Data.Reflection.Reifies' s Integer
+  .
+    normalize :: forall s. Modular s => Integer -> Modulus s
+    normalize n = M (mod n modulus) where
+    &#x20;  modulus = 'Data.Reflection.reflect' ('Data.Proxy.Proxy' :: 'Data.Proxy.Proxy' s)
+  .
+    instance Modular s => Num (Modulus s) where
+    &#x20;  M a + M b = normalize (a + b)
+    &#x20;  M a * M b = normalize (a * b)
+  .
+    withModulus :: Integer -> (forall s. Modular s => Modulus s) -> Integer
+    withModulus m v = 'Data.Reflection.reify' m (getModulus . asProxyOf v)
+    &#x20;  where
+    &#x20;  asProxyOf :: f s -> Proxy s -> f s
+    &#x20;  asProxyOf = const
+  @
+  .
+  That package is an implementation of the ideas presented in the
+  paper \"Functional Pearl: Implicit Configurations\" by Oleg Kiselyov
+  and Chung-chieh Shan (<http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf original paper>). However, the API has been streamlined to improve
+  performance.
+  .
+  Austin Seipp's tutorial <https://www.fpcomplete.com/user/thoughtpolice/using-reflection Reflecting values to types and back> provides a summary of the
+  approach taken by this library, along with more motivating
+  examples.
 
 extra-source-files:
   examples/Monoid.hs
