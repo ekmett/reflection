@@ -59,8 +59,11 @@ library
     default-extensions: Trustworthy
 
   build-depends:
-    base >= 2 && < 5,
-    tagged >= 0.4.4 && < 1
+    base >= 2 && < 5
+
+  if impl(ghc < 7.8)
+    build-depends:
+      tagged >= 0.4.4 && < 1
 
   default-language: Haskell98
 
