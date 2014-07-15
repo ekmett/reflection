@@ -192,7 +192,7 @@ nat n
   | n >= 0 = int n
   | otherwise = error "nat: negative"
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL < 704
+#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 704
 instance Show (Q a) where
   show _ = "Q"
 instance Eq (Q a) where
