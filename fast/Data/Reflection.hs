@@ -83,6 +83,8 @@ import Control.Monad
 
 #ifdef __HUGS__
 import Hugs.IOExts
+#elseif (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708)
+import Data.Coerce
 #else
 import Unsafe.Coerce
 #endif
@@ -100,7 +102,11 @@ newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
+#if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 708)
+reify a k = coerce (Magic k :: Magic a r) (const a) Proxy
+#else
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+#endif
 {-# INLINE reify #-}
 
 #if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
