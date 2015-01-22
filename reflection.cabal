@@ -62,7 +62,7 @@ description:
   .
   That package is an implementation of the ideas presented in the
   paper \"Functional Pearl: Implicit Configurations\" by Oleg Kiselyov
-  and Chung-chieh Shan (<http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf original paper>). However, the API has been streamlined to improve
+  and Chung-chieh Shan (<http://okmij.org/ftp/Haskell/tr-15-04.pdf original paper>). However, the API has been streamlined to improve
   performance.
   .
   Austin Seipp's tutorial <https://www.fpcomplete.com/user/thoughtpolice/using-reflection Reflecting values to types and back> provides a summary of the
