@@ -1,3 +1,7 @@
+# 1.5.1.1
+* Updated the link to the paper.
+* More examples.
+
 # 1.5.1
 * We no longer export Show (Q a) for GHC >= 7.4. This was causing random hangs when users tried to somehow run declaration splices from the REPL.
 * We no longer depend on tagged for GHC >= 7.8, since `Proxy` is now in `base`.
