@@ -23,7 +23,7 @@
 -- Pearl: Implicit Configurations paper by Oleg Kiselyov and
 -- Chung-chieh Shan.
 --
--- <http://www.cs.rutgers.edu/~ccshan/prepose/prepose.pdf>
+-- <http://okmij.org/ftp/Haskell/tr-15-04.pdf>
 --
 -- The approach from the paper was modified to work with Data.Proxy
 -- and streamline the API by Edward Kmett and Elliott Hird.
