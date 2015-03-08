@@ -71,6 +71,7 @@ description:
 
 extra-source-files:
   examples/Monoid.hs
+  examples/FromJSON.hs
   examples/Constraints.hs
   examples/Benchmark.hs
   CHANGELOG.markdown
