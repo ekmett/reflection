@@ -69,7 +69,6 @@ module Data.Reflection
     , Z, D, SD, PD
     ) where
 
-import Data.Functor
 import Data.Proxy
 
 #if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (TEMPLATE_HASKELL && USE_TYPE_LITS)
@@ -155,15 +154,15 @@ retagPD f _ = f Proxy
 {-# INLINE retagPD #-}
 
 instance Reifies n Int => Reifies (D n) Int where
-  reflect = (\n -> n + n) <$> retagD reflect
+  reflect = (\n -> n + n) `fmap` retagD reflect
   {-# INLINE reflect #-}
 
 instance Reifies n Int => Reifies (SD n) Int where
-  reflect = (\n -> n + n + 1) <$> retagSD reflect
+  reflect = (\n -> n + n + 1) `fmap` retagSD reflect
   {-# INLINE reflect #-}
 
 instance Reifies n Int => Reifies (PD n) Int where
-  reflect = (\n -> n + n - 1) <$> retagPD reflect
+  reflect = (\n -> n + n - 1) `fmap` retagPD reflect
   {-# INLINE reflect #-}
 
 #ifdef TEMPLATE_HASKELL
