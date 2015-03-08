@@ -1,3 +1,6 @@
+# 1.5.1.2
+* Builds warning-free on GHC 7.10.
+
 # 1.5.1.1
 * Updated the link to the paper.
 * More examples.
