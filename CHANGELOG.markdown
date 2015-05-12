@@ -1,3 +1,6 @@
+# 1.5.2
+* Renamed the flag for disabling the use of `template-haskell`, to `-f-template-haskell` for consistency with my other packages.
+
 # 1.5.1.2
 * Builds warning-free on GHC 7.10.
 * Added a dynamic FromJSON example.
