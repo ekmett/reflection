@@ -14,7 +14,7 @@
 {-# LANGUAGE TypeOperators #-}
 #define USE_TYPE_LITS 1
 #endif
-#ifdef TEMPLATE_HASKELL
+#ifdef MIN_VERSION_template_haskell
 {-# LANGUAGE TemplateHaskell #-}
 #endif
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -61,7 +61,7 @@ module Data.Reflection
     -- * Given
     , Given(..)
     , give
-#ifdef TEMPLATE_HASKELL
+#ifdef MIN_VERSION_template_haskell
     -- * Template Haskell reflection
     , int, nat
 #endif
@@ -71,11 +71,11 @@ module Data.Reflection
 
 import Data.Proxy
 
-#if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (TEMPLATE_HASKELL && USE_TYPE_LITS)
+#if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
 #endif
 
-#ifdef TEMPLATE_HASKELL
+#ifdef MIN_VERSION_template_haskell
 import Language.Haskell.TH hiding (reify)
 import Control.Monad
 #endif
@@ -165,7 +165,7 @@ instance Reifies n Int => Reifies (PD n) Int where
   reflect = (\n -> n + n - 1) `fmap` retagPD reflect
   {-# INLINE reflect #-}
 
-#ifdef TEMPLATE_HASKELL
+#ifdef MIN_VERSION_template_haskell
 -- | This can be used to generate a template haskell splice for a type level version of a given 'int'.
 --
 -- This does not use GHC TypeLits, instead it generates a numeric type by hand similar to the ones used
