@@ -21,7 +21,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
--- Copyright  : 2009-2013 Edward Kmett,
+-- Copyright  : 2009-2015 Edward Kmett,
 --              2012 Elliott Hird,
 --              2004 Oleg Kiselyov and Chung-chieh Shan
 -- License    : BSD3
@@ -58,6 +58,10 @@ module Data.Reflection
     -- * Reflection
       Reifies(..)
     , reify
+#if __GLASGOW_HASKELL__ >= 710
+    , reifyNat
+    , reifySymbol
+#endif
     -- * Given
     , Given(..)
     , give
@@ -102,12 +106,31 @@ reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
 {-# INLINE reify #-}
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707
+#if __GLASGOW_HASKELL__ >= 707
 instance KnownNat n => Reifies n Integer where
   reflect = natVal
 
 instance KnownSymbol n => Reifies n String where
   reflect = symbolVal
+#endif
+
+#if __GLASGOW_HASKELL__ >= 710
+newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
+
+-- | This upgraded version of 'reify' can be used to generate a 'KnownNat' suitable for use with other APIs.
+--
+-- /Available only on GHC 7.10+/
+reifyNat :: forall r. Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
+reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r) n Proxy
+
+newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Proxy n -> r)
+
+-- | This upgraded version of 'reify' can be used to generate a 'KnownSymbol' suitable for use with other APIs.
+--
+-- /Available only on GHC 7.10+/
+reifySymbol :: forall r. String -> (forall (n :: Symbol). KnownSymbol n => Proxy n -> r) -> r
+reifySymbol n k = unsafeCoerce (MagicSymbol k :: MagicSymbol r) n Proxy
+
 #endif
 
 ------------------------------------------------------------------------------
