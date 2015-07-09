@@ -58,7 +58,7 @@ module Data.Reflection
     -- * Reflection
       Reifies(..)
     , reify
-#if __GLASGOW_HASKELL__ >= 710
+#if __GLASGOW_HASKELL__ >= 708
     , reifyNat
     , reifySymbol
 #endif
@@ -114,12 +114,19 @@ instance KnownSymbol n => Reifies n String where
   reflect = symbolVal
 #endif
 
-#if __GLASGOW_HASKELL__ >= 710
+#if __GLASGOW_HASKELL__ >= 708
 newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 
 -- | This upgraded version of 'reify' can be used to generate a 'KnownNat' suitable for use with other APIs.
 --
--- /Available only on GHC 7.10+/
+-- /Available only on GHC 7.8+/
+--
+-- >>> reifyNat 4 natVal
+-- 4
+--
+-- >>> reifyNat 4 reflect
+-- 4
+
 reifyNat :: forall r. Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
 reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r) n Proxy
 
@@ -127,10 +134,15 @@ newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Prox
 
 -- | This upgraded version of 'reify' can be used to generate a 'KnownSymbol' suitable for use with other APIs.
 --
--- /Available only on GHC 7.10+/
+-- /Available only on GHC 7.8+/
+--
+-- >>> reifySymbol "hello" symbolVal
+-- "hello"
+--
+-- >>> reifySymbol "hello" reflect
+-- "hello"
 reifySymbol :: forall r. String -> (forall (n :: Symbol). KnownSymbol n => Proxy n -> r) -> r
 reifySymbol n k = unsafeCoerce (MagicSymbol k :: MagicSymbol r) n Proxy
-
 #endif
 
 ------------------------------------------------------------------------------
@@ -149,7 +161,7 @@ newtype Gift a r = Gift (Given a => r)
 
 -- | Reify a value into an instance to be recovered with 'given'.
 --
--- You should only 'give' a single value for each type. If multiple instances
+-- You should /only/ 'give' a single value for each type. If multiple instances
 -- are in scope, then the behavior is implementation defined.
 give :: forall a r. a -> (Given a => r) -> r
 give a k = unsafeCoerce (Gift k :: Gift a r) a
