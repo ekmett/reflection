@@ -1,3 +1,7 @@
+# 1.5.3
+* Added `reifyNat` and `reifySymbol` for GHC 7.8+, capable of reflecting into the `KnownNat` and `KnownSymbol` classes respectively for use with other APIs.
+* Back-ported `reifyTypeable` from `lens`. This enables us to perform a (less efficient) form of `Typeable` reflection.
+
 # 1.5.2
 * Renamed the flag for disabling the use of `template-haskell`, to `-f-template-haskell` for consistency with my other packages.
 
