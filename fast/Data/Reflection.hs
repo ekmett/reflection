@@ -108,10 +108,15 @@ import Control.Applicative
 import Control.Monad
 #endif
 
-import Data.Proxy
 import Data.Bits
-import Data.Word
+
+#if __GLASGOW_HASKELL__ < 710
+import Data.Monoid
+#endif
+
+import Data.Proxy
 import Data.Typeable
+import Data.Word
 import Foreign.Ptr
 import Foreign.StablePtr
 
