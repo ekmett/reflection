@@ -111,10 +111,16 @@ import Control.Monad
 import Data.Bits
 
 #if __GLASGOW_HASKELL__ < 710
+import Data.Foldable
 import Data.Monoid
 #endif
 
 import Data.Proxy
+
+#if __GLASGOW_HASKELL__ < 710
+import Data.Traversable
+#endif
+
 import Data.Typeable
 import Data.Word
 import Foreign.Ptr
