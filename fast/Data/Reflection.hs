@@ -87,34 +87,50 @@ module Data.Reflection
 #endif
     -- * Useful compile time naturals
     , Z, D, SD, PD
+
+    -- * Reified Monoids
+    , ReifiedMonoid(..)
+    , ReflectedMonoid(..)
+    , reifyMonoid
+    , foldMapBy
+    , foldBy
+
+    -- * Reified Applicatives
+    , ReifiedApplicative(..)
+    , ReflectedApplicative(..)
+    , reifyApplicative
+    , traverseBy
     ) where
 
+import Control.Applicative
+
+#ifdef MIN_VERSION_template_haskell
+import Control.Monad
+#endif
+
 import Data.Proxy
+import Data.Bits
+import Data.Word
+import Data.Typeable
+import Foreign.Ptr
+import Foreign.StablePtr
 
 #if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
 #endif
 
-#ifdef MIN_VERSION_template_haskell
-import Language.Haskell.TH hiding (reify)
-import Control.Monad
-#endif
-
 #ifdef __HUGS__
 import Hugs.IOExts
-#else
-import Unsafe.Coerce
 #endif
 
-import Foreign.Ptr
-import Foreign.StablePtr
-import System.IO.Unsafe
-import Data.Bits
-import Data.Word
-import Data.Typeable
+#ifdef MIN_VERSION_template_haskell
+import Language.Haskell.TH hiding (reify)
+#endif
 
-#if !MIN_VERSION_base(4,8,0)
-import Control.Applicative
+import System.IO.Unsafe
+
+#ifndef __HUGS__
+import Unsafe.Coerce
 #endif
 
 #ifdef HLINT
@@ -512,3 +528,73 @@ reifyTypeable a k = unsafeDupablePerformIO $ do
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   reflectBefore (fmap return k) $
                     stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+
+
+data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
+
+instance Reifies s (ReifiedMonoid a) => Monoid (ReflectedMonoid a s) where
+  mappend (ReflectedMonoid x) (ReflectedMonoid y) = reflectResult (\m -> ReflectedMonoid (reifiedMappend m x y))
+  mempty = reflectResult (\m -> ReflectedMonoid (reifiedMempty  m    ))
+
+reflectResult :: forall f s a. Reifies s a => (a -> f s) -> f s
+reflectResult f = f (reflect (Proxy :: Proxy s))
+
+newtype ReflectedMonoid a s = ReflectedMonoid a
+
+unreflectedMonoid :: ReflectedMonoid a s -> proxy s -> a
+unreflectedMonoid (ReflectedMonoid a) _ = a
+
+reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: *). Reifies s (ReifiedMonoid a) => t -> ReflectedMonoid a s) -> t -> a
+reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
+
+-- | Fold a value using its 'Foldable' instance using
+-- explicitly provided 'Monoid' operations. This is like 'fold'
+-- where the 'Monoid' instance can be manually specified.
+--
+-- @
+-- 'foldBy' 'mappend' 'mempty' ≡ 'fold'
+-- @
+--
+-- >>> foldBy (++) [] ["hello","world"]
+-- "helloworld"
+foldBy :: Foldable t => (a -> a -> a) -> a -> t a -> a
+foldBy f z = reifyMonoid f z (foldMap ReflectedMonoid)
+
+-- | Fold a value using its 'Foldable' instance using
+-- explicitly provided 'Monoid' operations. This is like 'foldMap'
+-- where the 'Monoid' instance can be manually specified.
+--
+-- @
+-- 'foldMapBy' 'mappend' 'mempty' ≡ 'foldMap'
+-- @
+--
+-- >>> foldMapBy (+) 0 length ["hello","world"]
+-- 10
+foldMapBy :: Foldable t => (r -> r -> r) -> r -> (a -> r) -> t a -> r
+foldMapBy f z g = reifyMonoid f z (foldMap (ReflectedMonoid #. g))
+
+data ReifiedApplicative f = ReifiedApplicative { reifiedPure :: forall a. a -> f a, reifiedAp :: forall a b. f (a -> b) -> f a -> f b }
+
+newtype ReflectedApplicative f s a = ReflectedApplicative (f a)
+
+instance Reifies s (ReifiedApplicative f) => Functor (ReflectedApplicative f s) where
+  fmap = liftA
+
+instance Reifies s (ReifiedApplicative f) => Applicative (ReflectedApplicative f s) where
+  pure a = reflectResult1 (\m -> ReflectedApplicative (reifiedPure m a))
+  ReflectedApplicative x <*> ReflectedApplicative y = reflectResult1 (\m -> ReflectedApplicative (reifiedAp m x y))
+
+reflectResult1 :: forall f s a b. Reifies s a => (a -> f s b) -> f s b
+reflectResult1 f = f (reflect (Proxy :: Proxy s))
+
+unreflectedApplicative :: ReflectedApplicative f s a -> proxy s -> f a
+unreflectedApplicative (ReflectedApplicative a) _ = a
+
+reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: *). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
+reifyApplicative f g m xs = reify (ReifiedApplicative f g) (unreflectedApplicative (m xs))
+
+traverseBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (a -> f b) -> t a -> f (t b)
+traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative #. f))
+
+(#.) :: (b -> c) -> (a -> b) -> a -> c
+(#.) _ = unsafeCoerce
