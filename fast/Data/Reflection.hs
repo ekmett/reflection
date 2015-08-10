@@ -100,6 +100,7 @@ module Data.Reflection
     , ReflectedApplicative(..)
     , reifyApplicative
     , traverseBy
+    , sequenceBy
     ) where
 
 import Control.Applicative
@@ -604,8 +605,17 @@ unreflectedApplicative (ReflectedApplicative a) _ = a
 reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: *). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
 reifyApplicative f g m xs = reify (ReifiedApplicative f g) (unreflectedApplicative (m xs))
 
+-- | Traverse a container using its 'Traversable' instance using
+-- explicitly provided 'Applicative' operations. This is like 'traverse'
+-- where the 'Applicative' instance can be manually specified.
 traverseBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (a -> f b) -> t a -> f (t b)
 traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative #. f))
+
+-- | Sequence a container using its 'Traversable' instance using
+-- explicitly provided 'Applicative' operations. This is like 'sequence'
+-- where the 'Applicative' instance can be manually specified.
+sequenceBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> t (f a) -> f (t a)
+sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
 
 (#.) :: (b -> c) -> (a -> b) -> a -> c
 (#.) _ = unsafeCoerce
