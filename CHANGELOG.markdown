@@ -1,3 +1,6 @@
+# 2.1.1.1
+* Fixed typos in the documentation.
+
 # 2.1.1
 * Fixed support for GHC 7.0
 
