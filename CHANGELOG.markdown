@@ -1,3 +1,9 @@
+# 2.1.1
+* Fixed support for GHC 7.0
+
+# 2.1
+* Added `ReifiedMonoid` and `ReifiedApplicative`.
+
 # 2
 * Added `reifyNat` and `reifySymbol` for GHC 7.8+, capable of reflecting into the `KnownNat` and `KnownSymbol` classes respectively for use with other APIs.
 * Back-ported `reifyTypeable` from `lens`. This enables us to perform a (less efficient) form of `Typeable` reflection.
