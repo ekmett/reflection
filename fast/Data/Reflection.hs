@@ -527,7 +527,11 @@ reflectBefore f = const $! f Proxy
 --
 -- This can be necessary to work around the changes to @Data.Typeable@ in GHC HEAD.
 reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) => Proxy s -> r) -> r
+#if MIN_VERSION_base(4,4,0)
 reifyTypeable a k = unsafeDupablePerformIO $ do
+#else
+reifyTypeable a k = unsafePerformIO $ do
+#endif
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
   reifyByte (fromIntegral n) (\s0 ->
