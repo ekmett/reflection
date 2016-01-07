@@ -16,8 +16,8 @@ build-type:     Simple
 cabal-version:  >= 1.10
 description:
   This package addresses the /configuration problem/ which is
-  propogating configurations that are available at run-time, allowing
-  multible configurations to coexist without resorting to mutable
+  propagating configurations that are available at run-time, allowing
+  multiple configurations to coexist without resorting to mutable
   global variables or 'System.IO.Unsafe.unsafePerformIO'.
   .
   That package is an implementation of the ideas presented in the
