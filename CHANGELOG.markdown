@@ -1,3 +1,6 @@
+# 2.1.2
+* Support cross-compilation and unregistered GHC builds.
+
 # 2.1.1.1
 * Fixed typos in the documentation.
 
