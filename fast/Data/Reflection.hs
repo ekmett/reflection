@@ -15,7 +15,12 @@
 #define USE_TYPE_LITS 1
 #endif
 #ifdef MIN_VERSION_template_haskell
+# if __GLASGOW_HASKELL__ >= 800
+-- TH-subset that works with stage1 & unregisterised GHCs
+{-# LANGUAGE TemplateHaskellQuotes #-}
+# else
 {-# LANGUAGE TemplateHaskell #-}
+# endif
 #endif
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
