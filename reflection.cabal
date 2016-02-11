@@ -73,6 +73,10 @@ library
   default-language: Haskell98
 
   if flag(template-haskell) && impl(ghc)
+    if !impl(ghc >= 8.0)
+      other-extensions: TemplateHaskell
+    -- else
+    --   other-extensions: TemplateHaskellQuotes -- Hackage doesn't know this extension yet
     build-depends: template-haskell
 
   if !flag(slow) && (impl(ghc) || impl(hugs))
