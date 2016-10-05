@@ -22,7 +22,7 @@ instance Newtype (Lift p a s) a where
 with :: Def p a -> (forall s. Reifies s (Def p a) => Lift p a s) -> a
 with d v = reify d $ lower . asProxyOf v
 
-reifyInstance :: Def p a -> (forall s. Reifies s (Def p a) => Proxy s -> r) -> r
+reifyInstance :: Def p a -> (forall (s :: *). Reifies s (Def p a) => Proxy s -> r) -> r
 reifyInstance = reify
 
 asProxyOf :: f s -> Proxy s -> f s
