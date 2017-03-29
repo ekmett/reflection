@@ -8,7 +8,7 @@
 {-# LANGUAGE PatternGuards #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 706
+#if __GLASGOW_HASKELL__ >= 706
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
@@ -23,8 +23,6 @@
 # endif
 #endif
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -32,6 +30,7 @@
 {-# OPTIONS_GHC -fno-cse #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 {-# OPTIONS_GHC -fno-float-in #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 {-# OPTIONS_GHC -fno-warn-unused-binds #-}
 
 #ifndef MIN_VERSION_base
@@ -132,7 +131,7 @@ import Data.Word
 import Foreign.Ptr
 import Foreign.StablePtr
 
-#if (defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
+#if (__GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
 #endif
 
