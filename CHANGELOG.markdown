@@ -1,3 +1,6 @@
+# next
+* Add `Semigroup` instance for `ReflectedMonoid`.
+
 # 2.1.2
 * Support cross-compilation and unregistered GHC builds.
 

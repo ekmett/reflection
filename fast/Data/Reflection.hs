@@ -120,6 +120,7 @@ import Data.Foldable
 import Data.Monoid
 #endif
 
+import Data.Semigroup as Sem
 import Data.Proxy
 
 #if __GLASGOW_HASKELL__ < 710
@@ -357,7 +358,7 @@ onProxyType1 f
     | proxyName == ''Proxy = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f ta)
 onProxyType1 f a =
         LamE [SigP WildP na] body `AppE` a
-    where 
+    where
           body = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f na)
           na = VarT (mkName "na")
 
@@ -552,8 +553,13 @@ reifyTypeable a k = unsafePerformIO $ do
 
 data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
 
+instance Reifies s (ReifiedMonoid a) => Sem.Semigroup (ReflectedMonoid a s) where
+  ReflectedMonoid x <> ReflectedMonoid y = reflectResult (\m -> ReflectedMonoid (reifiedMappend m x y))
+
 instance Reifies s (ReifiedMonoid a) => Monoid (ReflectedMonoid a s) where
-  mappend (ReflectedMonoid x) (ReflectedMonoid y) = reflectResult (\m -> ReflectedMonoid (reifiedMappend m x y))
+#if !(MIN_VERSION_base(4,11,0))
+  mappend = (<>)
+#endif
   mempty = reflectResult (\m -> ReflectedMonoid (reifiedMempty  m    ))
 
 reflectResult :: forall f s a. Reifies s a => (a -> f s) -> f s
