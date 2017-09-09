@@ -117,7 +117,6 @@ import Data.Bits
 
 #if __GLASGOW_HASKELL__ < 710
 import Data.Foldable
-import Data.Monoid
 #endif
 
 import Data.Semigroup as Sem
