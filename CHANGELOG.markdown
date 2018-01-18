@@ -1,4 +1,4 @@
-# next
+# 2.1.3 [2018.01.18]
 * Add `Semigroup` instance for `ReflectedMonoid`.
 
 # 2.1.2
