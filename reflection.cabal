@@ -27,12 +27,20 @@ description:
   .
   Austin Seipp's tutorial <https://www.fpcomplete.com/user/thoughtpolice/using-reflection Reflecting values to types and back> provides a summary of the
   approach taken by this library, along with more motivating examples.
+tested-with:   GHC == 7.0.4
+             , GHC == 7.2.2
+             , GHC == 7.4.2
+             , GHC == 7.6.3
+             , GHC == 7.8.4
+             , GHC == 7.10.3
+             , GHC == 8.0.2
+             , GHC == 8.2.2
+             , GHC == 8.4.1
 
 extra-source-files:
-  examples/Monoid.hs
-  examples/FromJSON.hs
-  examples/Constraints.hs
-  examples/Benchmark.hs
+  examples/reflection-examples.cabal
+  examples/LICENSE
+  examples/*.hs
   CHANGELOG.markdown
   README.markdown
   slow/Data/Reflection.hs

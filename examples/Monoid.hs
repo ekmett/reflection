@@ -1,4 +1,6 @@
 {-# LANGUAGE CPP, Rank2Types, FlexibleContexts, UndecidableInstances #-}
+module Monoid where
+
 import Data.Reflection -- from reflection
 import Data.Semigroup  -- from base
 import Data.Proxy      -- from tagged

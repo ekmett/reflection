@@ -1,4 +1,6 @@
 {-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, FlexibleContexts, UndecidableInstances #-}
+module Constraints where
+
 import Control.Newtype        -- from newtype
 import Data.Constraint        -- from constraints
 import Data.Constraint.Unsafe -- from constraints
