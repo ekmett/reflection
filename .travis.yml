@@ -38,34 +38,34 @@ matrix:
   include:
     - compiler: "ghc-7.0.4"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.0.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.0.4], sources: [hvr-ghc]}}
     - compiler: "ghc-7.2.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.2.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.2.2], sources: [hvr-ghc]}}
     - compiler: "ghc-7.4.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.4.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.4.2], sources: [hvr-ghc]}}
     - compiler: "ghc-7.6.3"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.6.3], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.6.3], sources: [hvr-ghc]}}
     - compiler: "ghc-7.8.4"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.8.4], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.8.4], sources: [hvr-ghc]}}
     - compiler: "ghc-7.10.3"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-7.10.3], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-7.10.3], sources: [hvr-ghc]}}
     - compiler: "ghc-8.0.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-8.0.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-8.0.2], sources: [hvr-ghc]}}
     - compiler: "ghc-8.2.2"
     # env: TEST=--disable-tests BENCH=--disable-benchmarks
-      addons: {apt: {packages: [*apt_packages,cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-2.0,ghc-8.2.2], sources: [hvr-ghc]}}
     - compiler: "ghc-8.4.1"
       env: GHCHEAD=true
-      addons: {apt: {packages: [*apt_packages,cabal-install-head,ghc-8.4.1], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-8.4.1], sources: [hvr-ghc]}}
     - compiler: "ghc-head"
       env: GHCHEAD=true
-      addons: {apt: {packages: [*apt_packages,cabal-install-head,ghc-head], sources: [hvr-ghc]}}
+      addons: {apt: {packages: [ghc-ppa-tools,cabal-install-head,ghc-head], sources: [hvr-ghc]}}
 
   allow_failures:
     - compiler: "ghc-7.0.4"
@@ -110,17 +110,14 @@ install:
       cabal new-update head.hackage -v
     fi
   - grep -Ev -- '^\s*--' ${HOME}/.cabal/config | grep -Ev '^\s*$'
-  - "printf 'packages: \".\" \"./examples\"\\n' > cabal.project"
+  - "printf 'packages: \".\"\\n' > cabal.project"
   - cat cabal.project
   - if [ -f "./configure.ac" ]; then
       (cd "." && autoreconf -i);
     fi
-  - if [ -f "./examples/configure.ac" ]; then
-      (cd "./examples" && autoreconf -i);
-    fi
   - rm -f cabal.project.freeze
   - cabal new-build -w ${HC} ${TEST} ${BENCH} --project-file="cabal.project" --dep -j2 all
-  - rm -rf "."/.ghc.environment.* "./examples"/.ghc.environment.* "."/dist "./examples"/dist
+  - rm -rf "."/.ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
 
 # Here starts the actual work to be performed for the package under test;
@@ -128,11 +125,10 @@ install:
 script:
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
-  - (cd "./examples" && cabal sdist)
-  - mv "."/dist/reflection-*.tar.gz "./examples"/dist/reflection-examples-*.tar.gz ${DISTDIR}/
+  - mv "."/dist/reflection-*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
-  - "printf 'packages: reflection-*/*.cabal reflection-examples-*/*.cabal\\n' > cabal.project"
+  - "printf 'packages: reflection-*/*.cabal\\n' > cabal.project"
   - cat cabal.project
 
 
@@ -141,7 +137,6 @@ script:
 
   # cabal check
   - (cd reflection-* && cabal check)
-  - (cd reflection-examples-* && cabal check)
 
   # haddock
   - rm -rf ./dist-newstyle
