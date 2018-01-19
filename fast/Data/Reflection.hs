@@ -244,10 +244,14 @@ give a k = unsafeCoerce (Gift k :: Gift a r) a
 -- Explicit Numeric Reflection
 --------------------------------------------------------------------------------
 
-data Z -- 0
-data D  (n :: *) -- 2n
-data SD (n :: *) -- 2n+1
-data PD (n :: *) -- 2n-1
+-- | 0
+data Z
+-- | 2/n/
+data D  (n :: *)
+-- | 2/n/ + 1
+data SD (n :: *)
+-- | 2/n/ - 1
+data PD (n :: *)
 
 instance Reifies Z Int where
   reflect _ = 0
