@@ -118,7 +118,7 @@ install:
       cabal new-update head.hackage -v
     fi
   - grep -Ev -- '^\s*--' ${HOME}/.cabal/config | grep -Ev '^\s*$'
-  - "printf 'packages: \".\" \"./examples\"\\n' > cabal.project"
+  - "printf 'packages: \".\"\\n' > cabal.project"
   - touch cabal.project.local
   - "if ! $NOINSTALLEDCONSTRAINTS; then for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/^/constraints: /' | sed 's/-[^-]*$/ installed/' >> cabal.project.local; done; fi"
   - cat cabal.project || true
@@ -126,11 +126,8 @@ install:
   - if [ -f "./configure.ac" ]; then
       (cd "." && autoreconf -i);
     fi
-  - if [ -f "./examples/configure.ac" ]; then
-      (cd "./examples" && autoreconf -i);
-    fi
   - rm -f cabal.project.freeze
-  - rm -rf .ghc.environment.* "."/dist "./examples"/dist
+  - rm -rf .ghc.environment.* "."/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
 
 # Here starts the actual work to be performed for the package under test;
@@ -138,11 +135,10 @@ install:
 script:
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
-  - (cd "./examples" && cabal sdist)
-  - mv "."/dist/reflection-*.tar.gz "./examples"/dist/reflection-examples-*.tar.gz ${DISTDIR}/
+  - mv "."/dist/reflection-*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
-  - "printf 'packages: reflection-*/*.cabal reflection-examples-*/*.cabal\\n' > cabal.project"
+  - "printf 'packages: reflection-*/*.cabal\\n' > cabal.project"
   - touch cabal.project.local
   - "if ! $NOINSTALLEDCONSTRAINTS; then for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/^/constraints: /' | sed 's/-[^-]*$/ installed/' >> cabal.project.local; done; fi"
   - cat cabal.project || true
@@ -153,7 +149,6 @@ script:
 
   # cabal check
   - (cd reflection-* && cabal check)
-  - (cd reflection-examples-* && cabal check)
 
   # haddock
   - rm -rf ./dist-newstyle
