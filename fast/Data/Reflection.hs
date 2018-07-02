@@ -334,7 +334,7 @@ instance Num Type where
   a + b = AppT (AppT (VarT ''(+)) a) b
 
   LitT (NumTyLit a) * LitT (NumTyLit b) = LitT (NumTyLit (a*b))
-  (*) a b = AppT (AppT (VarT ''(*)) a) b
+  (*) a b = AppT (AppT (VarT ''(GHC.TypeLits.*)) a) b
 #if MIN_VERSION_base(4,8,0)
   a - b = AppT (AppT (VarT ''(-)) a) b
 #else
