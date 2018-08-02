@@ -1,12 +1,13 @@
 {-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, FlexibleContexts, UndecidableInstances #-}
 module Constraints where
 
-import Control.Newtype        -- from newtype
-import Data.Constraint        -- from constraints
-import Data.Constraint.Unsafe -- from constraints
-import Data.Monoid            -- from base
-import Data.Proxy             -- from tagged
-import Data.Reflection        -- from reflection
+import Control.Newtype          -- from newtype
+import Data.Constraint          -- from constraints
+import Data.Constraint.Unsafe   -- from constraints
+import Data.Monoid (Monoid(..)) -- from base
+import Data.Proxy               -- from tagged
+import Data.Reflection          -- from reflection
+import Data.Semigroup           -- from semigroups
 
 -- | Values in our dynamically constructed monoid over 'a'
 newtype Lift (p :: * -> Constraint) (a :: *) (s :: *) = Lift { lower :: a }
@@ -42,8 +43,11 @@ instance ReifiableConstraint Monoid where
   data Def Monoid a = Monoid { mappend_ :: a -> a -> a, mempty_ :: a }
   reifiedIns = Sub Dict
 
+instance Reifies s (Def Monoid a) => Semigroup (Lift Monoid a s) where
+  a <> b             = Lift $ mappend_ (reflect a) (lower a) (lower b)
+
 instance Reifies s (Def Monoid a) => Monoid (Lift Monoid a s) where
-  mappend a b        = Lift $ mappend_ (reflect a) (lower a) (lower b)
+  mappend            = (<>)
   mempty = a where a = Lift $ mempty_ (reflect a)
 
 data ClassProxy (p :: * -> Constraint) = ClassProxy

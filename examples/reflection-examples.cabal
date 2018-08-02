@@ -38,6 +38,7 @@ library
                        constraints,
                        newtype,
                        reflection,
+                       semigroups,
                        tagged
   hs-source-dirs:      .
   ghc-options:         -Wall
