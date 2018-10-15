@@ -1,13 +1,14 @@
-{-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, FlexibleContexts, UndecidableInstances #-}
+{-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, FlexibleContexts, UndecidableInstances, CPP #-}
 module Constraints where
 
 import Control.Newtype          -- from newtype
 import Data.Constraint          -- from constraints
 import Data.Constraint.Unsafe   -- from constraints
-import Data.Monoid (Monoid(..)) -- from base
 import Data.Proxy               -- from tagged
 import Data.Reflection          -- from reflection
+#if !(MIN_VERSION_base(4,11,0))
 import Data.Semigroup           -- from semigroups
+#endif
 
 -- | Values in our dynamically constructed monoid over 'a'
 newtype Lift (p :: * -> Constraint) (a :: *) (s :: *) = Lift { lower :: a }

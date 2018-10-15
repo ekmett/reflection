@@ -50,9 +50,10 @@ executable reflection-from-json
   main-is:             FromJSON.hs
   build-depends:       aeson,
                        base >= 4.8 && < 5,
-                       lens,
-                       lens-aeson,
+                       microlens,
+                       microlens-aeson,
                        reflection,
+                       semigroups,
                        tagged,
                        text
   hs-source-dirs:      .

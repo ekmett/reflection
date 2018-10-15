@@ -9,7 +9,6 @@
 
 import Data.Proxy
 import Data.Reflection
-import Control.Applicative
 import System.IO
 
 data MyConfig = MyConfig
@@ -37,7 +36,7 @@ calculate (Datum m) (Datum n) = Datum ((m+n) * volume conf) where
   conf = reflect (Proxy :: Proxy p)
 
 run :: forall p. (Reifies p MyConfig) => Proxy p -> IO ()
-run p = do
+run _ = do
   d1 <- ask "Datum 1:" :: IO (Datum p)
   d2 <- ask "Datum 2:" :: IO (Datum p)
   -- look ma, no plumbing

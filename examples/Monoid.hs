@@ -1,9 +1,11 @@
 {-# LANGUAGE CPP, Rank2Types, FlexibleContexts, UndecidableInstances #-}
 module Monoid where
 
-import Data.Reflection -- from reflection
-import Data.Semigroup  -- from base
 import Data.Proxy      -- from tagged
+import Data.Reflection -- from reflection
+#if !(MIN_VERSION_base(4,11,0))
+import Data.Semigroup  -- from base
+#endif
 
 -- | Values in our dynamically-constructed 'Monoid' over 'a'
 newtype M a s = M { runM :: a } deriving (Eq,Ord)
