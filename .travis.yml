@@ -4,7 +4,7 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.3.20190425
+# version: 0.3.20190429
 #
 language: c
 dist: xenial
@@ -137,10 +137,10 @@ install:
   - touch cabal.project
   - |
     echo 'packages: "."' >> cabal.project
-    echo 'packages: "./examples"' >> cabal.project
+    if [ $HCNUMVER -eq 71003 ]  ||  [ $HCNUMVER -eq 80002 ]  ||  [ $HCNUMVER -eq 80202 ]  ||  [ $HCNUMVER -eq 80404 ]  ||  [ $HCNUMVER -eq 80605 ]  ||  [ $HCNUMVER -eq 80801 ] ; then echo 'packages: "./examples"' >> cabal.project ; fi
   - |
     echo "write-ghc-environment-files: always" >> cabal.project
-  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | grep -vE -- '^(reflection|reflection-examples)$' | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
+  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(reflection|reflection-examples)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
   - cat cabal.project.local || true
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
@@ -161,10 +161,10 @@ script:
   - touch cabal.project
   - |
     echo 'packages: "reflection-*/*.cabal"' >> cabal.project
-    echo 'packages: "reflection-examples-*/*.cabal"' >> cabal.project
+    if [ $HCNUMVER -eq 71003 ]  ||  [ $HCNUMVER -eq 80002 ]  ||  [ $HCNUMVER -eq 80202 ]  ||  [ $HCNUMVER -eq 80404 ]  ||  [ $HCNUMVER -eq 80605 ]  ||  [ $HCNUMVER -eq 80801 ] ; then echo 'packages: "reflection-examples-*/*.cabal"' >> cabal.project ; fi
   - |
     echo "write-ghc-environment-files: always" >> cabal.project
-  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | grep -vE -- '^(reflection|reflection-examples)$' | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
+  - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(reflection|reflection-examples)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
   - cat cabal.project.local || true
   # Building with tests and benchmarks...
@@ -172,7 +172,7 @@ script:
   - ${CABAL} v2-build -w ${HC} ${TEST} ${BENCH} all | color_cabal_output
   # cabal check...
   - (cd reflection-* && ${CABAL} -vnormal check)
-  - (cd reflection-examples-* && ${CABAL} -vnormal check)
+  - if [ $HCNUMVER -eq 71003 ]  ||  [ $HCNUMVER -eq 80002 ]  ||  [ $HCNUMVER -eq 80202 ]  ||  [ $HCNUMVER -eq 80404 ]  ||  [ $HCNUMVER -eq 80605 ]  ||  [ $HCNUMVER -eq 80801 ] ; then (cd reflection-examples-* && ${CABAL} -vnormal check) ; fi
   # haddock...
   - ${CABAL} v2-haddock -w ${HC} ${TEST} ${BENCH} all | color_cabal_output
   # Building without installed constraints for packages in global-db...
