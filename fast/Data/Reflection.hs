@@ -133,6 +133,11 @@ import Foreign.StablePtr
 
 #if (__GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
+# if MIN_VERSION_base(4,10,0)
+import Numeric.Natural (Natural)
+# elif __GLASGOW_HASKELL__ >= 707
+import Control.Exception (ArithException(..), throw)
+# endif
 #endif
 
 #ifdef __HUGS__
@@ -187,6 +192,9 @@ newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 
 -- | This upgraded version of 'reify' can be used to generate a 'KnownNat' suitable for use with other APIs.
 --
+-- Attemping to pass a negative 'Integer' as an argument will result in an
+-- 'Underflow' exception.
+--
 -- /Available only on GHC 7.8+/
 --
 -- >>> reifyNat 4 natVal
@@ -196,7 +204,17 @@ newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 -- 4
 
 reifyNat :: forall r. Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
-reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r) n Proxy
+reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r)
+# if MIN_VERSION_base(4,10,0)
+                             -- Starting with base-4.10, the internal
+                             -- representation of KnownNat changed from Integer
+                             -- to Natural, so make sure to perform the same
+                             -- conversion before unsafeCoercing.
+                             (fromInteger n :: Natural)
+# else
+                             (if n < 0 then throw Underflow else n)
+# endif
+                             Proxy
 
 --------------------------------------------------------------------------------
 -- KnownSymbol
