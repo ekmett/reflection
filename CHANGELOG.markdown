@@ -1,3 +1,7 @@
+# next [????.??.??]
+* Fix a bug in which `reifyNat` would yield incorrect results for very large
+  `Integer`s on GHC 8.2 or later.
+
 # 2.1.4 [2018.07.02]
 * Allow building with GHC 8.6.
 
