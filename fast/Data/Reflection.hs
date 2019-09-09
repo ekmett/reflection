@@ -108,6 +108,7 @@ module Data.Reflection
     ) where
 
 import Control.Applicative
+import Control.Exception
 
 #ifdef MIN_VERSION_template_haskell
 import Control.Monad
@@ -450,7 +451,9 @@ reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) 
 reifyTypeable (a :: a) k = unsafeDupablePerformIO $ do
   p <- newStablePtr a
   let n = stablePtrToIntPtr p
-  reifyNat (fromIntegral n) (\(_ :: Proxy n) ->
+  reifyNat (fromIntegral n) (\(_ :: Proxy n) -> do
+    -- Make sure we don't leak memory if `reflect` isn't otherwise used.
+    _ <- evaluate (reflect :: Proxy (Stable n a) -> a)
     pure $ k (Proxy :: Proxy (Stable n a)))
 
 data Stable (n :: Nat) a
