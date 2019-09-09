@@ -113,7 +113,10 @@ import Control.Applicative
 import Control.Monad
 #endif
 
+#if __GLASGOW_HASKELL__ < 800
 import Data.Bits
+import Data.Word
+#endif
 
 #if __GLASGOW_HASKELL__ < 710
 import Data.Foldable
@@ -127,7 +130,6 @@ import Data.Traversable
 #endif
 
 import Data.Typeable
-import Data.Word
 import Foreign.Ptr
 import Foreign.StablePtr
 
@@ -432,7 +434,34 @@ subProxy _ _ = error "Exp.(-): undefined"
 -- * Typeable Reflection
 --------------------------------------------------------------------------------
 
+stablePtrToIntPtr :: StablePtr a -> IntPtr
+stablePtrToIntPtr = ptrToIntPtr . castStablePtrToPtr
+{-# INLINE stablePtrToIntPtr #-}
 
+intPtrToStablePtr :: IntPtr -> StablePtr a
+intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
+{-# INLINE intPtrToStablePtr #-}
+
+
+#if __GLASGOW_HASKELL__ >= 800
+-- This implementation doesn't work before 8.0 because KnownNat didn't
+-- imply Typeable until then.
+reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) => Proxy s -> r) -> r
+reifyTypeable (a :: a) k = unsafeDupablePerformIO $ do
+  p <- newStablePtr a
+  let n = stablePtrToIntPtr p
+  reifyNat (fromIntegral n) (\(_ :: Proxy n) ->
+    pure $ k (Proxy :: Proxy (Stable n a)))
+
+data Stable (n :: Nat) a
+instance KnownNat n => Reifies (Stable n a) a where
+  reflect = r where
+      r = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p
+      p = intPtrToStablePtr $ fromIntegral $ reflect (Proxy :: Proxy n)
+  {-# NOINLINE reflect #-}
+
+#else
+-- We are in a world of pain
 class Typeable s => B s where
   reflectByte :: proxy s -> IntPtr
 
@@ -491,14 +520,6 @@ stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5 -> p b6 -> p b7
        -> Proxy (Stable (W b0 b1 b2 b3) (W b4 b5 b6 b7) a)
 stable _ _ _ _ _ _ _ _ = Proxy
 {-# INLINE stable #-}
-
-stablePtrToIntPtr :: StablePtr a -> IntPtr
-stablePtrToIntPtr = ptrToIntPtr . castStablePtrToPtr
-{-# INLINE stablePtrToIntPtr #-}
-
-intPtrToStablePtr :: IntPtr -> StablePtr a
-intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
-{-# INLINE intPtrToStablePtr #-}
 
 byte0 :: p (Stable (W b0 b1 b2 b3) w1 a) -> Proxy b0
 byte0 _ = Proxy
@@ -570,6 +591,7 @@ reifyTypeable a k = unsafePerformIO $ do
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   reflectBefore (fmap return k) $
                     stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+#endif
 
 
 data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
