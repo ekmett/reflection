@@ -570,6 +570,7 @@ reifyTypeable a k = unsafePerformIO $ do
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   reflectBefore (fmap return k) $
                     stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+{-# NOINLINE reifyTypeable #-}
 
 
 data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
