@@ -129,10 +129,6 @@ install:
   - |
     echo "packages: ." >> cabal.project
     if [ $HCNUMVER -ge 71000 ] ; then echo "packages: ./examples" >> cabal.project ; fi
-  - if [ $HCNUMVER -ge 80200 ] ; then echo 'package reflection' >> cabal.project ; fi
-  - "if [ $HCNUMVER -ge 80200 ] ; then echo '  ghc-options: -Werror=missing-methods' >> cabal.project ; fi"
-  - if [ $HCNUMVER -ge 80200 ] ; then echo 'package reflection-examples' >> cabal.project ; fi
-  - "if [ $HCNUMVER -ge 80200 ] ; then echo '  ghc-options: -Werror=missing-methods' >> cabal.project ; fi"
   - |
   - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(reflection|reflection-examples)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
@@ -159,10 +155,6 @@ script:
   - |
     echo "packages: ${PKGDIR_reflection}" >> cabal.project
     if [ $HCNUMVER -ge 71000 ] ; then echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project ; fi
-  - if [ $HCNUMVER -ge 80200 ] ; then echo 'package reflection' >> cabal.project ; fi
-  - "if [ $HCNUMVER -ge 80200 ] ; then echo '  ghc-options: -Werror=missing-methods' >> cabal.project ; fi"
-  - if [ $HCNUMVER -ge 80200 ] ; then echo 'package reflection-examples' >> cabal.project ; fi
-  - "if [ $HCNUMVER -ge 80200 ] ; then echo '  ghc-options: -Werror=missing-methods' >> cabal.project ; fi"
   - |
   - "for pkg in $($HCPKG list --simple-output); do echo $pkg | sed 's/-[^-]*$//' | (grep -vE -- '^(reflection|reflection-examples)$' || true) | sed 's/^/constraints: /' | sed 's/$/ installed/' >> cabal.project.local; done"
   - cat cabal.project || true
