@@ -1,4 +1,4 @@
-# next [????.??.??]
+# 2.1.6 [2020.05.16]
 * Fix a bug in which `give` (and possibly `reify`, `reifyNat`, and
   `reifySymbol`) could be unsoundly inlined by GHC 8.10 or older to produce
   incorrect runtime results.
