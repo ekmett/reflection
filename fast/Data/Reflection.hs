@@ -158,6 +158,17 @@ import Unsafe.Coerce
 {-# ANN module "HLint: ignore Avoid lambda" #-}
 #endif
 
+-- Due to https://gitlab.haskell.org/ghc/ghc/issues/16893, inlining
+-- unsafeCoerce too aggressively can cause optimization to become unsound on
+-- old versions of GHC. As a workaround, we mark unsafeCoerce-using definitions
+-- as NOINLINE where necessary.
+-- See https://github.com/ekmett/reflection/issues/47.
+#if __GLASGOW_HASKELL__ >= 811
+# define INLINE_UNSAFE_COERCE INLINE
+#else
+# define INLINE_UNSAFE_COERCE NOINLINE
+#endif
+
 ------------------------------------------------------------------------------
 -- Reifies
 ------------------------------------------------------------------------------
@@ -172,7 +183,7 @@ newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
-{-# INLINE reify #-}
+{-# INLINE_UNSAFE_COERCE reify #-}
 
 #if __GLASGOW_HASKELL__ >= 707
 instance KnownNat n => Reifies n Integer where
@@ -215,6 +226,7 @@ reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r)
                              (if n < 0 then throw Underflow else n)
 # endif
                              Proxy
+{-# INLINE_UNSAFE_COERCE reifyNat #-}
 
 --------------------------------------------------------------------------------
 -- KnownSymbol
@@ -233,7 +245,7 @@ newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Prox
 -- "hello"
 reifySymbol :: forall r. String -> (forall (n :: Symbol). KnownSymbol n => Proxy n -> r) -> r
 reifySymbol n k = unsafeCoerce (MagicSymbol k :: MagicSymbol r) n Proxy
-
+{-# INLINE_UNSAFE_COERCE reifySymbol #-}
 #endif
 
 ------------------------------------------------------------------------------
@@ -256,7 +268,7 @@ newtype Gift a r = Gift (Given a => r)
 -- are in scope, then the behavior is implementation defined.
 give :: forall a r. a -> (Given a => r) -> r
 give a k = unsafeCoerce (Gift k :: Gift a r) a
-{-# INLINE give #-}
+{-# INLINE_UNSAFE_COERCE give #-}
 
 --------------------------------------------------------------------------------
 -- Explicit Numeric Reflection
