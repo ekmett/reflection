@@ -113,11 +113,13 @@ test-suite spec
   hs-source-dirs: tests
   main-is: Spec.hs
   other-modules: ReifyNatSpec
+                 T47Spec
   ghc-options: -Wall
   default-language: Haskell98
   build-tool-depends: hspec-discover:hspec-discover >= 1.8
   build-depends:
-    base       >= 2 && < 5,
-    hspec      >= 2 && < 3,
-    QuickCheck >= 2 && < 3,
+    base       >= 2   && < 5,
+    containers >= 0.1 && < 0.7,
+    hspec      >= 2   && < 3,
+    QuickCheck >= 2   && < 3,
     reflection

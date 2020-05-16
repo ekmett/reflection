@@ -1,3 +1,8 @@
+# next [????.??.??]
+* Fix a bug in which `give` (and possibly `reify`, `reifyNat`, and
+  `reifySymbol`) could be unsoundly inlined by GHC 8.10 or older to produce
+  incorrect runtime results.
+
 # 2.1.5 [2019.08.27]
 * Fix a bug in which `reifyNat` would yield incorrect results for very large
   `Integer`s on GHC 8.2 or later.
