@@ -25,8 +25,12 @@ description:
   and Chung-chieh Shan (<http://okmij.org/ftp/Haskell/tr-15-04.pdf original paper>).
   However, the API has been streamlined to improve performance.
   .
-  Austin Seipp's tutorial <https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection Reflecting values to types and back> provides a summary of the
+  There are a handful of tutorials on how to use this library:
+  .
+  * Austin Seipp's tutorial <https://www.schoolofhaskell.com/user/thoughtpolice/using-reflection Reflecting values to types and back> provides a summary of the
   approach taken by this library, along with more motivating examples.
+  .
+  * Arnaud Spiwack's tutorial <https://www.tweag.io/posts/2017-12-21-reflection-tutorial.html All about reflection> explains how to use this library.
 tested-with:   GHC == 7.0.4
              , GHC == 7.2.2
              , GHC == 7.4.2
