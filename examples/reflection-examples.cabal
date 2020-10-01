@@ -39,6 +39,8 @@ library
                        tagged
   hs-source-dirs:      .
   ghc-options:         -Wall
+  if impl(ghc >= 8.6)
+    ghc-options:       -Wno-star-is-type
   default-language:    Haskell2010
 
 executable reflection-from-json
@@ -66,5 +68,7 @@ executable reflection-reader-like
                        tagged
   hs-source-dirs:      .
   ghc-options:         -Wall -threaded -rtsopts
+  if impl(ghc >= 8.6)
+    ghc-options:       -Wno-star-is-type
   default-language:    Haskell2010
 
