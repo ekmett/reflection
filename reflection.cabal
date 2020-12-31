@@ -52,7 +52,6 @@ extra-source-files:
   README.markdown
   slow/Data/Reflection.hs
   fast/Data/Reflection.hs
-  .travis.yml
 
 flag slow
   description:
