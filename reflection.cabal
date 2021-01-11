@@ -45,6 +45,7 @@ tested-with:   GHC == 7.0.4
              , GHC == 8.10.1
 
 extra-source-files:
+  .hlint.yaml
   examples/reflection-examples.cabal
   examples/LICENSE
   examples/*.hs
