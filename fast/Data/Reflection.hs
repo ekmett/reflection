@@ -154,10 +154,6 @@ import System.IO.Unsafe
 import Unsafe.Coerce
 #endif
 
-#ifdef HLINT
-{-# ANN module "HLint: ignore Avoid lambda" #-}
-#endif
-
 -- Due to https://gitlab.haskell.org/ghc/ghc/issues/16893, inlining
 -- unsafeCoerce too aggressively can cause optimization to become unsound on
 -- old versions of GHC. As a workaround, we mark unsafeCoerce-using definitions
