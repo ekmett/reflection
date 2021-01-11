@@ -208,6 +208,8 @@ newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 --
 -- /Available only on GHC 7.8+/
 --
+-- >>> import GHC.TypeLits
+--
 -- >>> reifyNat 4 natVal
 -- 4
 --
@@ -237,6 +239,8 @@ newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Prox
 -- | This upgraded version of 'reify' can be used to generate a 'KnownSymbol' suitable for use with other APIs.
 --
 -- /Available only on GHC 7.8+/
+--
+-- >>> import GHC.TypeLits
 --
 -- >>> reifySymbol "hello" symbolVal
 -- "hello"
