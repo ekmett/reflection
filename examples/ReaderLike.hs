@@ -65,4 +65,6 @@ instance Reifies p MyConfig => Num (Datum p) where
     where conf = reflect (Proxy :: Proxy p)
   abs = undefined
   signum = undefined
+  (-) = undefined
+  negate = undefined
   fromInteger = Datum
