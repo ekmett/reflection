@@ -134,7 +134,7 @@ import Foreign.StablePtr
 #if (__GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
 # if MIN_VERSION_base(4,10,0)
-import Numeric.Natural (Natural)
+import qualified Numeric.Natural as Numeric (Natural)
 # elif __GLASGOW_HASKELL__ >= 707
 import Control.Exception (ArithException(..), throw)
 # endif
@@ -219,7 +219,7 @@ reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r)
                              -- representation of KnownNat changed from Integer
                              -- to Natural, so make sure to perform the same
                              -- conversion before unsafeCoercing.
-                             (fromInteger n :: Natural)
+                             (fromInteger n :: Numeric.Natural)
 # else
                              (if n < 0 then throw Underflow else n)
 # endif
