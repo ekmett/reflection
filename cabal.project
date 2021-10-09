@@ -1,2 +1,5 @@
 packages: .
           ./examples
+
+-- TODO: Remove this when https://github.com/fosskers/microlens-aeson/issues/20 is fixed
+constraints: aeson < 2.0
