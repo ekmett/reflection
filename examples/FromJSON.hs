@@ -11,6 +11,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Data.Aeson             -- from aeson
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key as Key
+#endif
 import Data.Aeson.Types (Parser)
 import Data.Proxy             -- from tagged
 import Data.Reflection        -- from reflection
@@ -33,7 +36,15 @@ data Foo = Foo
 
 fooParser :: Text -> Object -> Parser Foo
 fooParser prefix o = do
-    Foo <$> o .: (prefix <> "field1") <*> o .: (prefix <> "field2")
+    Foo <$> o .: (toKey prefix <> "field1") <*> o .: (toKey prefix <> "field2")
+
+#if MIN_VERSION_aeson(2,0,0)
+toKey :: Text -> Key.Key
+toKey = Key.fromText
+#else
+toKey :: Text -> Text
+toKey = id
+#endif
 
 -- A wrapper over Foo carrying a phantom type s
 newtype J a s = J { runJ :: a }

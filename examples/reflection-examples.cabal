@@ -47,7 +47,10 @@ executable reflection-from-json
   if !flag(examples)
     buildable:         False
   main-is:             FromJSON.hs
-  build-depends:       aeson,
+  build-depends:
+                       -- TODO: Eventually, we should bump the lower version
+                       -- bounds to >=2 so that we can remove some CPP in FromJSON.
+                       aeson >= 1 && < 2.1,
                        base >= 4.9 && < 5,
                        microlens,
                        microlens-aeson,
