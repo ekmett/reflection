@@ -1,3 +1,4 @@
+distribution:           bionic
 no-tests-no-benchmarks: False
 jobs:                   2
 jobs-selection:         any

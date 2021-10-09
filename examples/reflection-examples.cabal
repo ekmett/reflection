@@ -15,8 +15,7 @@ copyright:      2009-2013 Edward A. Kmett,
                 2004 Oleg Kiselyov and Chung-chieh Shan
 build-type:     Simple
 cabal-version:  >= 1.10
-tested-with:   GHC == 7.10.3
-             , GHC == 8.0.2
+tested-with:   GHC == 8.0.2
              , GHC == 8.2.2
              , GHC == 8.4.4
              , GHC == 8.6.5
@@ -32,7 +31,7 @@ library
     buildable:         False
   exposed-modules:     Constraints
                        Monoid
-  build-depends:       base >= 4.8 && < 5,
+  build-depends:       base >= 4.9 && < 5,
                        constraints,
                        newtype-generics,
                        reflection,
@@ -49,7 +48,7 @@ executable reflection-from-json
     buildable:         False
   main-is:             FromJSON.hs
   build-depends:       aeson,
-                       base >= 4.8 && < 5,
+                       base >= 4.9 && < 5,
                        microlens,
                        microlens-aeson,
                        reflection,
@@ -64,7 +63,7 @@ executable reflection-reader-like
   if !flag(examples)
     buildable:         False
   main-is:             ReaderLike.hs
-  build-depends:       base >= 4.8 && < 5,
+  build-depends:       base >= 4.9 && < 5,
                        reflection,
                        tagged
   hs-source-dirs:      .

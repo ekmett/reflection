@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.12
+# version: 0.12.1
 #
-# REGENDATA ("0.12",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.12.1",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -167,7 +167,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/./examples" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/./examples" >> cabal.project ; fi
           cat cabal.project
       - name: sdist
         run: |
@@ -186,7 +186,7 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_reflection}" >> cabal.project
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project ; fi
+          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project ; fi
           cat >> cabal.project <<EOF
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(reflection|reflection-examples)$/; }' >> cabal.project.local
@@ -216,8 +216,8 @@ jobs:
         run: |
           cd ${PKGDIR_reflection} || false
           ${CABAL} -vnormal check
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then cd ${PKGDIR_reflection_examples} || false ; fi
-          if [ $((HCNUMVER >= 71000)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
+          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then cd ${PKGDIR_reflection_examples} || false ; fi
+          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
       - name: haddock
         run: |
           $CABAL v2-haddock $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
