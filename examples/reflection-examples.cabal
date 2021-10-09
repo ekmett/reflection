@@ -34,7 +34,7 @@ library
                        Monoid
   build-depends:       base >= 4.8 && < 5,
                        constraints,
-                       newtype,
+                       newtype-generics,
                        reflection,
                        semigroups,
                        tagged

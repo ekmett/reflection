@@ -1,7 +1,7 @@
 {-# LANGUAGE Rank2Types, TypeFamilies, TypeOperators, ConstraintKinds, PolyKinds, FlexibleInstances, MultiParamTypeClasses, ScopedTypeVariables, FlexibleContexts, UndecidableInstances, CPP #-}
 module Constraints where
 
-import Control.Newtype          -- from newtype
+import Control.Newtype.Generics -- from newtype-generics
 import Data.Constraint          -- from constraints
 import Data.Constraint.Unsafe   -- from constraints
 import Data.Proxy               -- from tagged
@@ -17,7 +17,8 @@ class ReifiableConstraint p where
   data Def (p :: * -> Constraint) (a :: *)
   reifiedIns :: Reifies s (Def p a) :- p (Lift p a s)
 
-instance Newtype (Lift p a s) a where
+instance Newtype (Lift p a s) where
+  type O (Lift p a s) = a
   pack = Lift
   unpack = lower
 
