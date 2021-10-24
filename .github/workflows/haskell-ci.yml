@@ -163,7 +163,6 @@ jobs:
           echo "packages: ${PKGDIR_reflection}" >> cabal.project
           if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project ; fi
           cat >> cabal.project <<EOF
-          constraints: aeson < 2.0
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(reflection|reflection-examples)$/; }' >> cabal.project.local
           cat cabal.project
