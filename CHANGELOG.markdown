@@ -1,3 +1,9 @@
+# next [????.??.??]
+* Implement `reify` and `give` in terms of the `withDict` primitive instead of
+  `unsafeCoerce` on GHC 9.4 or later. See
+  [#44](https://github.com/ekmett/reflection/issues/44) for the motivation
+  behind this change.
+
 # 2.1.7 [2023.02.28]
 * When building with `base-4.18` (GHC 9.6) or later, implement `reifyNat` and
   `reifySymbol` using the API provided by `GHC.TypeLits` instead of resorting

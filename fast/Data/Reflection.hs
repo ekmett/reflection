@@ -21,6 +21,11 @@
 # else
 {-# LANGUAGE TemplateHaskell #-}
 # endif
+
+# if MIN_VERSION_base(4,17,0)
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE TypeApplications #-}
+# endif
 #endif
 
 {-# LANGUAGE TypeFamilies #-}
@@ -151,16 +156,22 @@ import Language.Haskell.TH hiding (reify)
 
 import System.IO.Unsafe
 
-#ifndef __HUGS__
-import Unsafe.Coerce
-#endif
-
 #if MIN_VERSION_base(4,7,0)
 import Data.Coerce (Coercible, coerce)
 #endif
 
+#if MIN_VERSION_base(4,17,0)
+import qualified Data.Kind as K (Type)
+import qualified GHC.Exts as Exts (Any)
+import GHC.Exts (withDict)
+#endif
+
 #if MIN_VERSION_base(4,18,0)
 import qualified GHC.TypeNats as TN
+#else
+# ifndef __HUGS__
+import Unsafe.Coerce
+# endif
 #endif
 
 -- Due to https://gitlab.haskell.org/ghc/ghc/issues/16893, inlining
@@ -183,11 +194,17 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
-newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
-
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
+#if MIN_VERSION_base(4,17,0)
+reify a k = withDict @(Reifies (Exts.Any @K.Type) a)
+                     @(forall (proxy :: K.Type -> K.Type). proxy Exts.Any -> a)
+                     (const a) (k @Exts.Any) Proxy
+#else
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+
+newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
+#endif
 {-# INLINE_UNSAFE_COERCE reify #-}
 
 #if __GLASGOW_HASKELL__ >= 707
@@ -286,14 +303,18 @@ class Given a where
   -- | Recover the value of a given type previously encoded with 'give'.
   given :: a
 
-newtype Gift a r = Gift (Given a => r)
-
 -- | Reify a value into an instance to be recovered with 'given'.
 --
 -- You should /only/ 'give' a single value for each type. If multiple instances
 -- are in scope, then the behavior is implementation defined.
 give :: forall a r. a -> (Given a => r) -> r
+#if MIN_VERSION_base(4,17,0)
+give = withDict @(Given a)
+#else
 give a k = unsafeCoerce (Gift k :: Gift a r) a
+
+newtype Gift a r = Gift (Given a => r)
+#endif
 {-# INLINE_UNSAFE_COERCE give #-}
 
 --------------------------------------------------------------------------------
