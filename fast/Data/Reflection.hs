@@ -154,6 +154,10 @@ import System.IO.Unsafe
 import Unsafe.Coerce
 #endif
 
+#if MIN_VERSION_base(4,7,0)
+import Data.Coerce (Coercible, coerce)
+#endif
+
 -- Due to https://gitlab.haskell.org/ghc/ghc/issues/16893, inlining
 -- unsafeCoerce too aggressively can cause optimization to become unsound on
 -- old versions of GHC. As a workaround, we mark unsafeCoerce-using definitions
@@ -664,5 +668,10 @@ traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative 
 sequenceBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> t (f a) -> f (t a)
 sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
 
+#if MIN_VERSION_base(4,7,0)
+(#.) :: Coercible c b => (b -> c) -> (a -> b) -> (a -> c)
+(#.) _ = coerce (\x -> x :: b) :: forall a b. Coercible b a => a -> b
+#else
 (#.) :: (b -> c) -> (a -> b) -> a -> c
 (#.) _ = unsafeCoerce
+#endif
