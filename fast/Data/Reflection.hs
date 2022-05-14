@@ -21,6 +21,11 @@
 # else
 {-# LANGUAGE TemplateHaskell #-}
 # endif
+
+# if MIN_VERSION_base(4,17,0)
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE TypeApplications #-}
+# endif
 #endif
 
 {-# LANGUAGE TypeFamilies #-}
@@ -159,6 +164,12 @@ import Unsafe.Coerce
 import Data.Coerce (Coercible, coerce)
 #endif
 
+#if MIN_VERSION_base(4,17,0)
+import qualified Data.Kind as K (Type)
+import qualified GHC.Exts as Exts (Any)
+import GHC.Exts (withDict)
+#endif
+
 #if MIN_VERSION_base(4,18,0)
 import qualified GHC.TypeNats as TN
 #endif
@@ -183,11 +194,17 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
-newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
-
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
+#if MIN_VERSION_base(4,17,0)
+reify a k = withDict @(Reifies (Exts.Any @K.Type) a)
+                     @(forall (proxy :: K.Type -> K.Type). proxy Exts.Any -> a)
+                     (const a) (k @Exts.Any) Proxy
+#else
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+
+newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
+#endif
 {-# INLINE_UNSAFE_COERCE reify #-}
 
 #if __GLASGOW_HASKELL__ >= 707
