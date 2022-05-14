@@ -15,6 +15,10 @@
 -- TH-subset that works with stage1 & unregisterised GHCs
 {-# LANGUAGE TemplateHaskellQuotes #-}
 #endif
+#if MIN_VERSION_base(4,17,0)
+{-# LANGUAGE ImpredicativeTypes #-}
+{-# LANGUAGE TypeApplications #-}
+#endif
 
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE UndecidableInstances #-}
@@ -130,6 +134,12 @@ import System.IO.Unsafe
 import Unsafe.Coerce
 #endif
 
+#if MIN_VERSION_base(4,17,0)
+import qualified Data.Kind as K (Type)
+import qualified GHC.Exts as Exts (Any)
+import GHC.Exts (withDict)
+#endif
+
 #if MIN_VERSION_base(4,18,0)
 import qualified GHC.TypeNats as TN
 #endif
@@ -154,11 +164,17 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
-newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
-
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
+#if MIN_VERSION_base(4,17,0)
+reify a k = withDict @(Reifies (Exts.Any @K.Type) a)
+                     @(forall (proxy :: K.Type -> K.Type). proxy Exts.Any -> a)
+                     (const a) (k @Exts.Any) Proxy
+#else
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+
+newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
+#endif
 {-# INLINE_UNSAFE_COERCE reify #-}
 
 instance KnownNat n => Reifies n Integer where

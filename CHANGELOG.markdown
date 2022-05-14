@@ -1,3 +1,9 @@
+# next [????.??.??]
+* Implement `reify` in terms of the `withDict` primitive instead of
+  `unsafeCoerce` on GHC 9.4 or later. See
+  [#44](https://github.com/ekmett/reflection/issues/44) for the motivation
+  behind this change.
+
 # 2.1.9 [2024.12.04]
 * Drop support for pre-8.0 versions of GHC.
 
