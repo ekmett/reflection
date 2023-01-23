@@ -158,6 +158,10 @@ import Unsafe.Coerce
 import Data.Coerce (Coercible, coerce)
 #endif
 
+#if MIN_VERSION_base(4,18,0)
+import qualified GHC.TypeNats as TN
+#endif
+
 -- Due to https://gitlab.haskell.org/ghc/ghc/issues/16893, inlining
 -- unsafeCoerce too aggressively can cause optimization to become unsound on
 -- old versions of GHC. As a workaround, we mark unsafeCoerce-using definitions
@@ -199,8 +203,6 @@ instance KnownSymbol n => Reifies n String where
 -- KnownNat
 --------------------------------------------------------------------------------
 
-newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
-
 -- | This upgraded version of 'reify' can be used to generate a 'KnownNat' suitable for use with other APIs.
 --
 -- Attemping to pass a negative 'Integer' as an argument will result in an
@@ -217,24 +219,33 @@ newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 -- 4
 
 reifyNat :: forall r. Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
+# if MIN_VERSION_base(4,18,0)
+-- With base-4.18 or later, we can use the API in GHC.TypeNats to define this
+-- function directly.
+reifyNat n k = TN.withSomeSNat (fromInteger n :: Numeric.Natural) $
+               \(sn :: (SNat n)) -> TN.withKnownNat sn $ k (Proxy :: Proxy n)
+{-# INLINE reifyNat #-}
+# else
+-- On older versions of base, we resort to unsafeCoerce.
 reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r)
-# if MIN_VERSION_base(4,10,0)
+#  if MIN_VERSION_base(4,10,0)
                              -- Starting with base-4.10, the internal
                              -- representation of KnownNat changed from Integer
                              -- to Natural, so make sure to perform the same
                              -- conversion before unsafeCoercing.
                              (fromInteger n :: Numeric.Natural)
-# else
+#  else
                              (if n < 0 then throw Underflow else n)
-# endif
+#  endif
                              Proxy
 {-# INLINE_UNSAFE_COERCE reifyNat #-}
+
+newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
+# endif
 
 --------------------------------------------------------------------------------
 -- KnownSymbol
 --------------------------------------------------------------------------------
-
-newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Proxy n -> r)
 
 -- | This upgraded version of 'reify' can be used to generate a 'KnownSymbol' suitable for use with other APIs.
 --
@@ -248,8 +259,18 @@ newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Prox
 -- >>> reifySymbol "hello" reflect
 -- "hello"
 reifySymbol :: forall r. String -> (forall (n :: Symbol). KnownSymbol n => Proxy n -> r) -> r
+# if MIN_VERSION_base(4,18,0)
+-- With base-4.18 or later, we can use the API in GHC.TypeNats to define this
+-- function directly.
+reifySymbol s k = withSomeSSymbol s $ \(ss :: SSymbol s) -> withKnownSymbol ss (k (Proxy :: Proxy s))
+{-# INLINE reifySymbol #-}
+# else
+-- On older versions of base, we resort to unsafeCoerce.
 reifySymbol n k = unsafeCoerce (MagicSymbol k :: MagicSymbol r) n Proxy
 {-# INLINE_UNSAFE_COERCE reifySymbol #-}
+# endif
+
+newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Proxy n -> r)
 #endif
 
 ------------------------------------------------------------------------------

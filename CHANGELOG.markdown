@@ -1,3 +1,8 @@
+# next [????.??.??]
+* When building with `base-4.18` (GHC 9.6) or later, implement `reifyNat` and
+  `reifySymbol` using the API provided by `GHC.TypeLits` instead of resorting
+  to `unsafeCoerce`.
+
 # 2.1.6 [2020.05.16]
 * Fix a bug in which `give` (and possibly `reify`, `reifyNat`, and
   `reifySymbol`) could be unsoundly inlined by GHC 8.10 or older to produce
