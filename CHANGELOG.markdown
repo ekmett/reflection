@@ -1,4 +1,4 @@
-# next [????.??.??]
+# 2.1.7 [2023.02.28]
 * When building with `base-4.18` (GHC 9.6) or later, implement `reifyNat` and
   `reifySymbol` using the API provided by `GHC.TypeLits` instead of resorting
   to `unsafeCoerce`.
