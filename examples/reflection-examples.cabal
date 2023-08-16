@@ -53,7 +53,7 @@ executable reflection-from-json
   build-depends:
                        -- TODO: Eventually, we should bump the lower version
                        -- bounds to >=2 so that we can remove some CPP in FromJSON.
-                       aeson >= 1 && < 2.2,
+                       aeson >= 1 && < 2.3,
                        base >= 4.9 && < 5,
                        microlens,
                        microlens-aeson,
