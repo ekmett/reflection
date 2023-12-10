@@ -193,16 +193,16 @@ instance Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box b)
     Box a -> a
 
 -- Ensure that exactly one dictionary of Reifies (StableBox ...) is created and
--- evaluated per a reifyTypeable call.
+-- evaluated per reifyTypeable call.
 --
 -- Evaluating the dictionary's thunk frees the allocated StablePtr, and the
 -- contents of the StablePtr replace the thunk. Creating two dictionaries would
 -- mean a double free upon their evaluation, and leaving a dictionary
 -- unevaluated would leak the StablePtr
--- (see https://github.com/ekmett/reflection/issues/54 ).
+-- (see https://github.com/ekmett/reflection/issues/54).
 --
 -- To separate evaluation of the dictionary and evaluation of the actual
--- argument passed to reifyTypeable, we insert a Box inbetween.
+-- argument passed to reifyTypeable, we insert a Box in between.
 withStableBox
   :: Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box a)
   => (Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a
