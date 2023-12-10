@@ -108,6 +108,7 @@ module Data.Reflection
     ) where
 
 import Control.Applicative
+import Control.Exception
 
 #ifdef MIN_VERSION_template_haskell
 import Control.Monad
@@ -522,7 +523,14 @@ _ -> impossible
 }
 
 newtype W (b0 :: *) (b1 :: *) (b2 :: *) (b3 :: *) = W (W b0 b1 b2 b3) deriving Typeable
+newtype StableBox (w0 :: *) (w1 :: *) (a :: *) = StableBox (StableBox w0 w1 a) deriving Typeable
 newtype Stable (w0 :: *) (w1 :: *) (a :: *) = Stable (Stable w0 w1 a) deriving Typeable
+
+data Box a = Box a
+
+stableBox :: p (Stable w1 w2 a) -> Proxy (StableBox w1 w2 a)
+stableBox _ = Proxy
+{-# INLINE stableBox #-}
 
 stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5 -> p b6 -> p b7
        -> Proxy (Stable (W b0 b1 b2 b3) (W b4 b5 b6 b7) a)
@@ -537,35 +545,35 @@ intPtrToStablePtr :: IntPtr -> StablePtr a
 intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
 {-# INLINE intPtrToStablePtr #-}
 
-byte0 :: p (Stable (W b0 b1 b2 b3) w1 a) -> Proxy b0
+byte0 :: p (StableBox (W b0 b1 b2 b3) w1 a) -> Proxy b0
 byte0 _ = Proxy
 
-byte1 :: p (Stable (W b0 b1 b2 b3) w1 a) -> Proxy b1
+byte1 :: p (StableBox (W b0 b1 b2 b3) w1 a) -> Proxy b1
 byte1 _ = Proxy
 
-byte2 :: p (Stable (W b0 b1 b2 b3) w1 a) -> Proxy b2
+byte2 :: p (StableBox (W b0 b1 b2 b3) w1 a) -> Proxy b2
 byte2 _ = Proxy
 
-byte3 :: p (Stable (W b0 b1 b2 b3) w1 a) -> Proxy b3
+byte3 :: p (StableBox (W b0 b1 b2 b3) w1 a) -> Proxy b3
 byte3 _ = Proxy
 
-byte4 :: p (Stable w0 (W b4 b5 b6 b7) a) -> Proxy b4
+byte4 :: p (StableBox w0 (W b4 b5 b6 b7) a) -> Proxy b4
 byte4 _ = Proxy
 
-byte5 :: p (Stable w0 (W b4 b5 b6 b7) a) -> Proxy b5
+byte5 :: p (StableBox w0 (W b4 b5 b6 b7) a) -> Proxy b5
 byte5 _ = Proxy
 
-byte6 :: p (Stable w0 (W b4 b5 b6 b7) a) -> Proxy b6
+byte6 :: p (StableBox w0 (W b4 b5 b6 b7) a) -> Proxy b6
 byte6 _ = Proxy
 
-byte7 :: p (Stable w0 (W b4 b5 b6 b7) a) -> Proxy b7
+byte7 :: p (StableBox w0 (W b4 b5 b6 b7) a) -> Proxy b7
 byte7 _ = Proxy
 
 argument :: (p s -> r) -> Proxy s
 argument _ = Proxy
 
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7, w0 ~ W b0 b1 b2 b3, w1 ~ W b4 b5 b6 b7)
-    => Reifies (Stable w0 w1 a) a where
+    => Reifies (StableBox w0 w1 a) (Box a) where
   reflect = r where
       r = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p
       s = argument r
@@ -580,11 +588,23 @@ instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7, w0 ~ W b0 b1 b2 b3, w1
         (reflectByte (byte7 s) `shiftL` 56)
   {-# NOINLINE reflect #-}
 
--- This had to be moved to the top level, due to an apparent bug in
--- the ghc inliner introduced in ghc 7.0.x
-reflectBefore :: forall (proxy :: * -> *) s b. (Proxy s -> b) -> proxy s -> b
-reflectBefore f = const $! f Proxy
-{-# NOINLINE reflectBefore #-}
+instance Reifies (StableBox w0 w1 a) (Box b) => Reifies (Stable w0 w1 a) b where
+  reflect p = case reflect (stableBox p) of
+    Box a -> a
+
+-- Ensure that exactly one dictionary of Reifies (StableBox ...) is created and evaluated per a reifyTypeable call.
+--
+-- Evaluating the dictionary's thunk frees the allocated StablePtr, and the contents of the StablePtr replace the thunk.
+-- Creating two dictionaries would mean a double free upon their evaluation, and leaving a dictionary unevaluated would
+-- leak the StablePtr (see https://github.com/ekmett/reflection/issues/54 ).
+--
+-- To separate evaluation of the dictionary and evaluation of the actual argument passed to reifyTypeable, we insert a
+-- Box inbetween.
+withStableBox :: Reifies (StableBox w0 w1 a) (Box a) => (Reifies (Stable w0 w1 a) a => Proxy (Stable w0 w1 a) -> r) -> Proxy (Stable w0 w1 a) -> IO r
+withStableBox k p = do
+  _ <- evaluate $ reflect (stableBox p)
+  evaluate $ k p
+{-# NOINLINE withStableBox #-}
 
 -- | Reify a value at the type level in a 'Typeable'-compatible fashion, to be recovered with 'reflect'.
 --
@@ -595,7 +615,7 @@ reifyTypeable a k = unsafeDupablePerformIO $ do
 #else
 reifyTypeable a k = unsafePerformIO $ do
 #endif
-  p <- newStablePtr a
+  p <- newStablePtr (Box a)
   let n = stablePtrToIntPtr p
   reifyByte (fromIntegral n) (\s0 ->
     reifyByte (fromIntegral (n `shiftR` 8)) (\s1 ->
@@ -605,9 +625,7 @@ reifyTypeable a k = unsafePerformIO $ do
             reifyByte (fromIntegral (n `shiftR` 40)) (\s5 ->
               reifyByte (fromIntegral (n `shiftR` 48)) (\s6 ->
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
-                  reflectBefore (fmap return k) $
-                    stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
-
+                  withStableBox k $ stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
 
 data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
 
