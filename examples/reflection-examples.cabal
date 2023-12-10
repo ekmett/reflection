@@ -56,7 +56,7 @@ executable reflection-from-json
                        aeson >= 1 && < 2.3,
                        base >= 4.9 && < 5,
                        microlens,
-                       microlens-aeson,
+                       microlens-aeson >= 2.5.1,
                        reflection,
                        semigroups,
                        tagged,
