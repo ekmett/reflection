@@ -1,8 +1,11 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# OPTIONS_GHC -fno-cse #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 {-# OPTIONS_GHC -fno-float-in #-}
@@ -49,6 +52,7 @@ import Foreign.Ptr
 import Foreign.StablePtr
 import System.IO.Unsafe
 import Control.Applicative
+import Control.Exception
 import Data.Proxy
 import Data.Bits
 import Data.Word
@@ -115,8 +119,17 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
+newtype StableBox b0 b1 b2 b3 b4 b5 b6 b7 a =
+  StableBox (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a)
 newtype Stable b0 b1 b2 b3 b4 b5 b6 b7 a =
   Stable (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
+
+data Box a = Box a
+
+stableBox :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
+          -> Proxy (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a)
+stableBox _ = Proxy
+{-# INLINE stableBox #-}
 
 stable :: p b0 -> p b1 -> p b2 -> p b3 -> p b4 -> p b5 -> p b6 -> p b7
        -> Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
@@ -131,35 +144,35 @@ intPtrToStablePtr :: IntPtr -> StablePtr a
 intPtrToStablePtr = castPtrToStablePtr . intPtrToPtr
 {-# INLINE intPtrToStablePtr #-}
 
-byte0 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b0
+byte0 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b0
 byte0 _ = Proxy
 
-byte1 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b1
+byte1 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b1
 byte1 _ = Proxy
 
-byte2 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b2
+byte2 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b2
 byte2 _ = Proxy
 
-byte3 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b3
+byte3 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b3
 byte3 _ = Proxy
 
-byte4 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b4
+byte4 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b4
 byte4 _ = Proxy
 
-byte5 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b5
+byte5 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b5
 byte5 _ = Proxy
 
-byte6 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b6
+byte6 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b6
 byte6 _ = Proxy
 
-byte7 :: p (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b7
+byte7 :: p (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) -> Proxy b7
 byte7 _ = Proxy
 
 argument :: (p s -> r) -> Proxy s
 argument _ = Proxy
 
 instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
-    => Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a where
+    => Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box a) where
   reflect = r where
       r = unsafePerformIO $ const <$> deRefStablePtr p <* freeStablePtr p
       s = argument r
@@ -174,11 +187,33 @@ instance (B b0, B b1, B b2, B b3, B b4, B b5, B b6, B b7)
         (reflectByte (byte7 s) `shiftL` 56)
   {-# NOINLINE reflect #-}
 
--- This had to be moved to the top level, due to an apparent bug in
--- the ghc inliner introduced in ghc 7.0.x
-reflectBefore :: Reifies s a => (Proxy s -> b) -> proxy s -> b
-reflectBefore f = const $! f Proxy
-{-# NOINLINE reflectBefore #-}
+instance Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box b)
+    => Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) b where
+  reflect p = case reflect (stableBox p) of
+    Box a -> a
+
+-- Ensure that exactly one dictionary of Reifies (StableBox ...) is created and
+-- evaluated per a reifyTypeable call.
+--
+-- Evaluating the dictionary's thunk frees the allocated StablePtr, and the
+-- contents of the StablePtr replace the thunk. Creating two dictionaries would
+-- mean a double free upon their evaluation, and leaving a dictionary
+-- unevaluated would leak the StablePtr
+-- (see https://github.com/ekmett/reflection/issues/54 ).
+--
+-- To separate evaluation of the dictionary and evaluation of the actual
+-- argument passed to reifyTypeable, we insert a Box inbetween.
+withStableBox
+  :: Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box a)
+  => (Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a
+    => Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
+    -> r)
+  -> Proxy (Stable b0 b1 b2 b3 b4 b5 b6 b7 a)
+  -> IO r
+withStableBox k p = do
+  _ <- evaluate $ reflect (stableBox p)
+  evaluate $ k p
+{-# NOINLINE withStableBox #-}
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
 reify :: a -> (forall s. (Reifies s a) => Proxy s -> r) -> r
@@ -193,5 +228,4 @@ reify a k = unsafeDupablePerformIO $ do
             reifyByte (fromIntegral (n `shiftR` 40)) (\s5 ->
               reifyByte (fromIntegral (n `shiftR` 48)) (\s6 ->
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
-                  reflectBefore (fmap return k) $
-                    stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+                  withStableBox k $ stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
