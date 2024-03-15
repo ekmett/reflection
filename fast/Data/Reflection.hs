@@ -11,6 +11,9 @@
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
+#if __GLASGOW_HASKELL__ < 806
+{-# LANGUAGE TypeInType #-}
+#endif
 #ifdef MIN_VERSION_template_haskell
 -- TH-subset that works with stage1 & unregisterised GHCs
 {-# LANGUAGE TemplateHaskellQuotes #-}
@@ -107,6 +110,7 @@ import Control.Monad
 
 import Data.Bits
 import Data.Coerce (Coercible, coerce)
+import qualified Data.Kind as Kind (Type)
 import Data.Semigroup as Sem
 import Data.Proxy
 import Data.Typeable
@@ -161,11 +165,11 @@ class Reifies s a | s -> a where
   -- reified type.
   reflect :: proxy s -> a
 
-newtype Magic a r = Magic (forall (s :: *). Reifies s a => Proxy s -> r)
+newtype Magic a r k = Magic (forall (s :: k). Reifies s a => Proxy s -> r)
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
-reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
-reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
+reify :: forall a r k. a -> (forall (s :: k). Reifies s a => Proxy s -> r) -> r
+reify a k = unsafeCoerce (Magic k :: Magic a r k) (const a) Proxy
 {-# INLINE_UNSAFE_COERCE reify #-}
 
 instance KnownNat n => Reifies n Integer where
@@ -276,11 +280,11 @@ give a k = unsafeCoerce (Gift k :: Gift a r) a
 -- | 0
 data Z
 -- | 2/n/
-data D  (n :: *)
+data D  (n :: Kind.Type)
 -- | 2/n/ + 1
-data SD (n :: *)
+data SD (n :: Kind.Type)
 -- | 2/n/ - 1
-data PD (n :: *)
+data PD (n :: Kind.Type)
 
 instance Reifies Z Int where
   reflect _ = 0
@@ -449,7 +453,7 @@ BYTES(GO)
 impossible :: a
 impossible = error "Data.Reflection.reifyByte: impossible"
 
-reifyByte :: Word8 -> (forall (s :: *). B s => Proxy s -> r) -> r
+reifyByte :: Word8 -> (forall (s :: Kind.Type). B s => Proxy s -> r) -> r
 reifyByte w k = case w of {
 #define GO(Tn,n) n -> k (Proxy :: Proxy Tn);
 BYTES(GO)
@@ -457,9 +461,9 @@ BYTES(GO)
 _ -> impossible
 }
 
-newtype W (b0 :: *) (b1 :: *) (b2 :: *) (b3 :: *) = W (W b0 b1 b2 b3) deriving Typeable
-newtype StableBox (w0 :: *) (w1 :: *) (a :: *) = StableBox (StableBox w0 w1 a) deriving Typeable
-newtype Stable (w0 :: *) (w1 :: *) (a :: *) = Stable (Stable w0 w1 a) deriving Typeable
+newtype W (b0 :: Kind.Type) (b1 :: Kind.Type) (b2 :: Kind.Type) (b3 :: Kind.Type) = W (W b0 b1 b2 b3) deriving Typeable
+newtype StableBox (w0 :: Kind.Type) (w1 :: Kind.Type) (a :: Kind.Type) = StableBox (StableBox w0 w1 a) deriving Typeable
+newtype Stable (w0 :: Kind.Type) (w1 :: Kind.Type) (a :: Kind.Type) = Stable (Stable w0 w1 a) deriving Typeable
 
 data Box a = Box a
 
@@ -544,7 +548,7 @@ withStableBox k p = do
 -- | Reify a value at the type level in a 'Typeable'-compatible fashion, to be recovered with 'reflect'.
 --
 -- This can be necessary to work around the changes to @Data.Typeable@ in GHC HEAD.
-reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) => Proxy s -> r) -> r
+reifyTypeable :: Typeable a => a -> (forall (s :: Kind.Type). (Typeable s, Reifies s a) => Proxy s -> r) -> r
 reifyTypeable a k = unsafeDupablePerformIO $ do
   p <- newStablePtr (Box a)
   let n = stablePtrToIntPtr p
@@ -577,7 +581,7 @@ newtype ReflectedMonoid a s = ReflectedMonoid a
 unreflectedMonoid :: ReflectedMonoid a s -> proxy s -> a
 unreflectedMonoid (ReflectedMonoid a) _ = a
 
-reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: *). Reifies s (ReifiedMonoid a) => t -> ReflectedMonoid a s) -> t -> a
+reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: Kind.Type). Reifies s (ReifiedMonoid a) => t -> ReflectedMonoid a s) -> t -> a
 reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
 
 -- | Fold a value using its 'Foldable' instance using
@@ -623,7 +627,7 @@ reflectResult1 f = f (reflect (Proxy :: Proxy s))
 unreflectedApplicative :: ReflectedApplicative f s a -> proxy s -> f a
 unreflectedApplicative (ReflectedApplicative a) _ = a
 
-reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: *). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
+reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: Kind.Type). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
 reifyApplicative f g m xs = reify (ReifiedApplicative f g) (unreflectedApplicative (m xs))
 
 -- | Traverse a container using its 'Traversable' instance using
