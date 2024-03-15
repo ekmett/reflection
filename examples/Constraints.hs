@@ -36,10 +36,10 @@ asProxyOf a _ = a
 -- > using (Monoid (+) 0) $ mappend mempty 12
 -- > 12
 using :: forall p a. ReifiableConstraint p => Def p a -> (p a => a) -> a
-using d m = reify d $ \(_ :: Proxy s) -> m \\ trans (unsafeCoerceConstraint :: (p (Lift p a s) :- p a)) reifiedIns
+using d m = reify d $ \(_ :: Proxy (s :: *)) -> m \\ trans (unsafeCoerceConstraint :: (p (Lift p a s) :- p a)) reifiedIns
 
 usingT :: forall p f a. ReifiableConstraint p => Def p a -> (p a => f a) -> f a
-usingT d m = reify d $ \(_ :: Proxy s) -> m \\ trans (unsafeCoerceConstraint :: (p (Lift p a s) :- p a)) reifiedIns
+usingT d m = reify d $ \(_ :: Proxy (s :: *)) -> m \\ trans (unsafeCoerceConstraint :: (p (Lift p a s) :- p a)) reifiedIns
 
 instance ReifiableConstraint Monoid where
   data Def Monoid a = Monoid { mappend_ :: a -> a -> a, mempty_ :: a }
