@@ -31,13 +31,7 @@ description:
   approach taken by this library, along with more motivating examples.
   .
   * Arnaud Spiwack's tutorial <https://www.tweag.io/posts/2017-12-21-reflection-tutorial.html All about reflection> explains how to use this library.
-tested-with:   GHC == 7.0.4
-             , GHC == 7.2.2
-             , GHC == 7.4.2
-             , GHC == 7.6.3
-             , GHC == 7.8.4
-             , GHC == 7.10.3
-             , GHC == 8.0.2
+tested-with:   GHC == 8.0.2
              , GHC == 8.2.2
              , GHC == 8.4.4
              , GHC == 8.6.5
@@ -85,7 +79,7 @@ library
     default-extensions: Trustworthy
 
   build-depends:
-    base >= 2 && < 5
+    base >= 4.9 && < 5
 
   if impl(ghc < 7.8)
     build-depends:

@@ -78,36 +78,6 @@ jobs:
             compilerVersion: 8.0.2
             setup-method: hvr-ppa
             allow-failure: false
-          - compiler: ghc-7.10.3
-            compilerKind: ghc
-            compilerVersion: 7.10.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.8.4
-            compilerKind: ghc
-            compilerVersion: 7.8.4
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.6.3
-            compilerKind: ghc
-            compilerVersion: 7.6.3
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.4.2
-            compilerKind: ghc
-            compilerVersion: 7.4.2
-            setup-method: hvr-ppa
-            allow-failure: false
-          - compiler: ghc-7.2.2
-            compilerKind: ghc
-            compilerVersion: 7.2.2
-            setup-method: hvr-ppa
-            allow-failure: true
-          - compiler: ghc-7.0.4
-            compilerKind: ghc
-            compilerVersion: 7.0.4
-            setup-method: hvr-ppa
-            allow-failure: true
       fail-fast: false
     steps:
       - name: apt
@@ -229,7 +199,7 @@ jobs:
         run: |
           touch cabal.project
           echo "packages: $GITHUB_WORKSPACE/source/." >> cabal.project
-          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then echo "packages: $GITHUB_WORKSPACE/source/./examples" >> cabal.project ; fi
+          echo "packages: $GITHUB_WORKSPACE/source/./examples" >> cabal.project
           cat cabal.project
       - name: sdist
         run: |
@@ -249,7 +219,7 @@ jobs:
           touch cabal.project
           touch cabal.project.local
           echo "packages: ${PKGDIR_reflection}" >> cabal.project
-          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project ; fi
+          echo "packages: ${PKGDIR_reflection_examples}" >> cabal.project
           cat >> cabal.project <<EOF
           EOF
           $HCPKG list --simple-output --names-only | perl -ne 'for (split /\s+/) { print "constraints: $_ installed\n" unless /^(reflection|reflection-examples)$/; }' >> cabal.project.local
@@ -279,8 +249,8 @@ jobs:
         run: |
           cd ${PKGDIR_reflection} || false
           ${CABAL} -vnormal check
-          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then cd ${PKGDIR_reflection_examples} || false ; fi
-          if [ $((HCNUMVER >= 80000)) -ne 0 ] ; then ${CABAL} -vnormal check ; fi
+          cd ${PKGDIR_reflection_examples} || false
+          ${CABAL} -vnormal check
       - name: haddock
         run: |
           $CABAL v2-haddock --disable-documentation --haddock-all $ARG_COMPILER --with-haddock $HADDOCK $ARG_TESTS $ARG_BENCH all
