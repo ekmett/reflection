@@ -1,4 +1,4 @@
-# next [????.??.??]
+# 2.1.8 [2024.05.04]
 * Fix a memory leak in `reifyTypeable`.
 
 # 2.1.7 [2023.02.28]
