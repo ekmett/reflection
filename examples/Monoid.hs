@@ -7,7 +7,7 @@ import Data.Reflection -- from reflection
 import Data.Semigroup  -- from base
 #endif
 
--- | Values in our dynamically-constructed 'Monoid' over 'a'
+-- | Values in our dynamically-constructed 'Monoid' over @a@
 newtype M a s = M { runM :: a } deriving (Eq,Ord)
 
 -- | A dictionary describing a 'Monoid'

@@ -650,7 +650,7 @@ reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: *). Reifies s (ReifiedMonoid 
 reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
 
 -- | Fold a value using its 'Foldable' instance using
--- explicitly provided 'Monoid' operations. This is like 'fold'
+-- explicitly provided 'Monoid' operations. This is like 'Data.Foldable.fold'
 -- where the 'Monoid' instance can be manually specified.
 --
 -- @
