@@ -10,7 +10,7 @@ import Data.Reflection          -- from reflection
 import Data.Semigroup           -- from semigroups
 #endif
 
--- | Values in our dynamically constructed monoid over 'a'
+-- | Values in our dynamically constructed monoid over @a@
 newtype Lift (p :: * -> Constraint) (a :: *) (s :: *) = Lift { lower :: a }
 
 class ReifiableConstraint p where
