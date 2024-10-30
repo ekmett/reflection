@@ -1,3 +1,6 @@
+# next [????.??.??]
+* Drop support for pre-8.0 versions of GHC.
+
 # 2.1.8 [2024.05.04]
 * Fix a memory leak in `reifyTypeable`.
 

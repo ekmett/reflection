@@ -1,11 +1,7 @@
-distribution:           bionic
+distribution:           jammy
 no-tests-no-benchmarks: False
 jobs:                   2
-jobs-selection:         any
 install-dependencies:   False
-allow-failures:         <7.3
--- https://github.com/ndmitchell/hlint/issues/1200
--- hlint:                  True
 -- irc-channels:           irc.freenode.org#haskell-lens
 irc-if-in-origin-repo:  True
 error-missing-methods:  none

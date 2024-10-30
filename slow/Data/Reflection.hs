@@ -9,7 +9,7 @@
 {-# OPTIONS_GHC -fno-cse #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 {-# OPTIONS_GHC -fno-float-in #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
+{-# OPTIONS_GHC -Wno-unused-binds #-}
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection

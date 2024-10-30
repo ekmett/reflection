@@ -1,4 +1,5 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE EmptyDataDecls #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -6,36 +7,23 @@
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-#if __GLASGOW_HASKELL__ >= 706
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE PolyKinds #-}
 {-# LANGUAGE TypeOperators #-}
-#define USE_TYPE_LITS 1
-#endif
 #ifdef MIN_VERSION_template_haskell
-# if __GLASGOW_HASKELL__ >= 800
 -- TH-subset that works with stage1 & unregisterised GHCs
 {-# LANGUAGE TemplateHaskellQuotes #-}
-# else
-{-# LANGUAGE TemplateHaskell #-}
-# endif
 #endif
 
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 {-# OPTIONS_GHC -fno-cse #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 {-# OPTIONS_GHC -fno-float-in #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-{-# OPTIONS_GHC -fno-warn-unused-binds #-}
-
-#ifndef MIN_VERSION_base
-#define MIN_VERSION_base(x,y,z) 1
-#endif
+{-# OPTIONS_GHC -Wno-orphans #-}
+{-# OPTIONS_GHC -Wno-unused-binds #-}
 
 ----------------------------------------------------------------------------
 -- |
@@ -77,10 +65,8 @@ module Data.Reflection
     -- * Reflection
       Reifies(..)
     , reify
-#if __GLASGOW_HASKELL__ >= 708
     , reifyNat
     , reifySymbol
-#endif
     , reifyTypeable
     -- * Given
     , Given(..)
@@ -115,30 +101,19 @@ import Control.Monad
 #endif
 
 import Data.Bits
-
-#if __GLASGOW_HASKELL__ < 710
-import Data.Foldable
-#endif
-
-import Data.Semigroup as Sem
+import Data.Coerce (Coercible, coerce)
 import Data.Proxy
-
-#if __GLASGOW_HASKELL__ < 710
-import Data.Traversable
-#endif
-
+import Data.Semigroup as Sem
 import Data.Typeable
 import Data.Word
 import Foreign.Ptr
 import Foreign.StablePtr
 
-#if (__GLASGOW_HASKELL__ >= 707) || (defined(MIN_VERSION_template_haskell) && USE_TYPE_LITS)
 import GHC.TypeLits
-# if MIN_VERSION_base(4,10,0)
+#if MIN_VERSION_base(4,10,0)
 import qualified Numeric.Natural as Numeric (Natural)
-# elif __GLASGOW_HASKELL__ >= 707
+#else
 import Control.Exception (ArithException(..), throw)
-# endif
 #endif
 
 #ifdef __HUGS__
@@ -153,10 +128,6 @@ import System.IO.Unsafe
 
 #ifndef __HUGS__
 import Unsafe.Coerce
-#endif
-
-#if MIN_VERSION_base(4,7,0)
-import Data.Coerce (Coercible, coerce)
 #endif
 
 #if MIN_VERSION_base(4,18,0)
@@ -190,15 +161,11 @@ reify :: forall a r. a -> (forall (s :: *). Reifies s a => Proxy s -> r) -> r
 reify a k = unsafeCoerce (Magic k :: Magic a r) (const a) Proxy
 {-# INLINE_UNSAFE_COERCE reify #-}
 
-#if __GLASGOW_HASKELL__ >= 707
 instance KnownNat n => Reifies n Integer where
   reflect = natVal
 
 instance KnownSymbol n => Reifies n String where
   reflect = symbolVal
-#endif
-
-#if __GLASGOW_HASKELL__ >= 708
 
 --------------------------------------------------------------------------------
 -- KnownNat
@@ -220,29 +187,29 @@ instance KnownSymbol n => Reifies n String where
 -- 4
 
 reifyNat :: forall r. Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
-# if MIN_VERSION_base(4,18,0)
+#if MIN_VERSION_base(4,18,0)
 -- With base-4.18 or later, we can use the API in GHC.TypeNats to define this
 -- function directly.
 reifyNat n k = TN.withSomeSNat (fromInteger n :: Numeric.Natural) $
                \(sn :: (SNat n)) -> TN.withKnownNat sn $ k (Proxy :: Proxy n)
 {-# INLINE reifyNat #-}
-# else
+#else
 -- On older versions of base, we resort to unsafeCoerce.
 reifyNat n k = unsafeCoerce (MagicNat k :: MagicNat r)
-#  if MIN_VERSION_base(4,10,0)
+# if MIN_VERSION_base(4,10,0)
                              -- Starting with base-4.10, the internal
                              -- representation of KnownNat changed from Integer
                              -- to Natural, so make sure to perform the same
                              -- conversion before unsafeCoercing.
                              (fromInteger n :: Numeric.Natural)
-#  else
+# else
                              (if n < 0 then throw Underflow else n)
-#  endif
+# endif
                              Proxy
 {-# INLINE_UNSAFE_COERCE reifyNat #-}
 
 newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
-# endif
+#endif
 
 --------------------------------------------------------------------------------
 -- KnownSymbol
@@ -260,19 +227,18 @@ newtype MagicNat r = MagicNat (forall (n :: Nat). KnownNat n => Proxy n -> r)
 -- >>> reifySymbol "hello" reflect
 -- "hello"
 reifySymbol :: forall r. String -> (forall (n :: Symbol). KnownSymbol n => Proxy n -> r) -> r
-# if MIN_VERSION_base(4,18,0)
+#if MIN_VERSION_base(4,18,0)
 -- With base-4.18 or later, we can use the API in GHC.TypeNats to define this
 -- function directly.
 reifySymbol s k = withSomeSSymbol s $ \(ss :: SSymbol s) -> withKnownSymbol ss (k (Proxy :: Proxy s))
 {-# INLINE reifySymbol #-}
-# else
+#else
 -- On older versions of base, we resort to unsafeCoerce.
 reifySymbol n k = unsafeCoerce (MagicSymbol k :: MagicSymbol r) n Proxy
 {-# INLINE_UNSAFE_COERCE reifySymbol #-}
-# endif
+#endif
 
 newtype MagicSymbol r = MagicSymbol (forall (n :: Symbol). KnownSymbol n => Proxy n -> r)
-#endif
 
 ------------------------------------------------------------------------------
 -- Given
@@ -344,9 +310,7 @@ instance Reifies n Int => Reifies (PD n) Int where
 -- in the \"Functional Pearl: Implicit Configurations\" paper by Oleg Kiselyov and Chung-Chieh Shan.
 --
 -- @instance Num (Q Exp)@ provided in this package allows writing @$(3)@
--- instead of @$(int 3)@. Sometimes the two will produce the same
--- representation (if compiled without the @-DUSE_TYPE_LITS@ preprocessor
--- directive).
+-- instead of @$(int 3)@.
 int :: Int -> TypeQ
 int n = case quotRem n 2 of
   (0, 0) -> conT ''Z
@@ -363,12 +327,6 @@ nat n
   | n >= 0 = int n
   | otherwise = error "nat: negative"
 
-#if defined(__GLASGOW_HASKELL__) && __GLASGOW_HASKELL__ < 704
-instance Show (Q a) where
-  show _ = "Q"
-instance Eq (Q a) where
-  _ == _ = False
-#endif
 instance Num a => Num (Q a) where
   (+) = liftM2 (+)
   (*) = liftM2 (*)
@@ -385,29 +343,13 @@ instance Fractional a => Fractional (Q a) where
 
 -- | This permits the use of $(5) as a type splice.
 instance Num Type where
-#ifdef USE_TYPE_LITS
   LitT (NumTyLit a) + LitT (NumTyLit b) = LitT (NumTyLit (a+b))
   a + b = AppT (AppT (VarT ''(+)) a) b
 
   LitT (NumTyLit a) * LitT (NumTyLit b) = LitT (NumTyLit (a*b))
   (*) a b = AppT (AppT (VarT ''(GHC.TypeLits.*)) a) b
-#if MIN_VERSION_base(4,8,0)
   a - b = AppT (AppT (VarT ''(-)) a) b
-#else
-  (-) = error "Type.(-): undefined"
-#endif
   fromInteger = LitT . NumTyLit
-#else
-  (+) = error "Type.(+): undefined"
-  (*) = error "Type.(*): undefined"
-  (-) = error "Type.(-): undefined"
-  fromInteger n = case quotRem n 2 of
-      (0, 0) -> ConT ''Z
-      (q,-1) -> ConT ''PD `AppT` fromInteger q
-      (q, 0) -> ConT ''D  `AppT` fromInteger q
-      (q, 1) -> ConT ''SD `AppT` fromInteger q
-      _ -> error "ghc is bad at math"
-#endif
   abs = error "Type.abs"
   signum = error "Type.signum"
 
@@ -442,27 +384,12 @@ instance Num Exp where
   signum = onProxyType1 signum
   fromInteger n = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` fromInteger n)
 
-#ifdef USE_TYPE_LITS
 addProxy :: Proxy a -> Proxy b -> Proxy (a + b)
 addProxy _ _ = Proxy
 mulProxy :: Proxy a -> Proxy b -> Proxy (a * b)
 mulProxy _ _ = Proxy
-#if MIN_VERSION_base(4,8,0)
 subProxy :: Proxy a -> Proxy b -> Proxy (a - b)
 subProxy _ _ = Proxy
-#else
-subProxy :: Proxy a -> Proxy b -> Proxy c
-subProxy _ _ = error "Exp.(-): undefined"
-#endif
---  fromInteger = LitT . NumTyLit
-#else
-addProxy :: Proxy a -> Proxy b -> Proxy c
-addProxy _ _ = error "Exp.(+): undefined"
-mulProxy :: Proxy a -> Proxy b -> Proxy c
-mulProxy _ _ = error "Exp.(*): undefined"
-subProxy :: Proxy a -> Proxy b -> Proxy c
-subProxy _ _ = error "Exp.(-): undefined"
-#endif
 
 #endif
 
@@ -504,7 +431,7 @@ class Typeable s => B s where
   GO(T253,253) GO(T254,254) GO(T255,255)
 
 #define GO(Tn,n) \
-  newtype Tn = Tn Tn deriving Typeable; \
+  newtype Tn = Tn Tn; \
   instance B Tn where { \
     reflectByte _ = n \
   };
@@ -522,9 +449,9 @@ BYTES(GO)
 _ -> impossible
 }
 
-newtype W (b0 :: *) (b1 :: *) (b2 :: *) (b3 :: *) = W (W b0 b1 b2 b3) deriving Typeable
-newtype StableBox (w0 :: *) (w1 :: *) (a :: *) = StableBox (StableBox w0 w1 a) deriving Typeable
-newtype Stable (w0 :: *) (w1 :: *) (a :: *) = Stable (Stable w0 w1 a) deriving Typeable
+newtype W (b0 :: *) (b1 :: *) (b2 :: *) (b3 :: *) = W (W b0 b1 b2 b3)
+newtype StableBox (w0 :: *) (w1 :: *) (a :: *) = StableBox (StableBox w0 w1 a)
+newtype Stable (w0 :: *) (w1 :: *) (a :: *) = Stable (Stable w0 w1 a)
 
 data Box a = Box a
 
@@ -610,11 +537,7 @@ withStableBox k p = do
 --
 -- This can be necessary to work around the changes to @Data.Typeable@ in GHC HEAD.
 reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) => Proxy s -> r) -> r
-#if MIN_VERSION_base(4,4,0)
 reifyTypeable a k = unsafeDupablePerformIO $ do
-#else
-reifyTypeable a k = unsafePerformIO $ do
-#endif
   p <- newStablePtr (Box a)
   let n = stablePtrToIntPtr p
   reifyByte (fromIntegral n) (\s0 ->
@@ -707,10 +630,5 @@ traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative 
 sequenceBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> t (f a) -> f (t a)
 sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
 
-#if MIN_VERSION_base(4,7,0)
 (#.) :: Coercible c b => (b -> c) -> (a -> b) -> (a -> c)
 (#.) _ = coerce (\x -> x :: b) :: forall a b. Coercible b a => a -> b
-#else
-(#.) :: (b -> c) -> (a -> b) -> a -> c
-(#.) _ = unsafeCoerce
-#endif

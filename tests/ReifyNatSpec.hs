@@ -2,20 +2,18 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ReifyNatSpec where
 
-#if __GLASGOW_HASKELL__ >= 708
 import Data.Reflection
 import Test.Hspec.QuickCheck
 import Test.QuickCheck (NonNegative(..))
 
-# if MIN_VERSION_base(4,10,0)
+#if MIN_VERSION_base(4,10,0)
 import GHC.TypeNats (natVal)
 import Numeric.Natural (Natural)
-# endif
+#endif
 
-# if __GLASGOW_HASKELL__ != 900
+#if __GLASGOW_HASKELL__ != 900
 import Control.Exception (ArithException(..), evaluate)
 import Test.QuickCheck (Negative(..))
-# endif
 #endif
 
 import Test.Hspec
@@ -25,11 +23,10 @@ main = hspec spec
 
 spec :: Spec
 spec =
-#if __GLASGOW_HASKELL__ >= 708
   describe "reifyNat" $ do
     prop "reify positive Integers and reflect them back" $
       \(NonNegative (i :: Integer)) -> reifyNat i $ \p -> reflect p `shouldBe` i
-# if __GLASGOW_HASKELL__ != 900
+#if __GLASGOW_HASKELL__ != 900
     -- Inexplicably, this test fails on GHC 9.0 with hspec-2.8.4 or later.
     -- Moreover, I suspect that undefined behavior is involved in some way,
     -- as the output of hspec will occasionally be swallowed entirely. I have
@@ -38,8 +35,8 @@ spec =
     prop "should throw an Underflow exception on negative inputs" $
       \(Negative (i :: Integer)) ->
         reifyNat i (evaluate . reflect) `shouldThrow` (== Underflow)
-# endif
-# if MIN_VERSION_base(4,10,0)
+#endif
+#if MIN_VERSION_base(4,10,0)
     it "should reflect very large Naturals correctly" $ do -- #41
       let d42, d2_63, d2_64 :: Natural
           d42   = 42
@@ -50,7 +47,4 @@ spec =
       reifyNat (toInteger d2_63)     $ \p -> natVal p `shouldBe` d2_63
       reifyNat (toInteger (d2_64-1)) $ \p -> natVal p `shouldBe` d2_64-1
       reifyNat (toInteger d2_64)     $ \p -> natVal p `shouldBe` d2_64
-# endif
-#else
-  return ()
 #endif

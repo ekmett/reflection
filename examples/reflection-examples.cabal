@@ -23,8 +23,10 @@ tested-with:   GHC == 8.0.2
              , GHC == 8.10.7
              , GHC == 9.0.2
              , GHC == 9.2.8
-             , GHC == 9.4.5
-             , GHC == 9.6.2
+             , GHC == 9.4.8
+             , GHC == 9.6.6
+             , GHC == 9.8.2
+             , GHC == 9.10.1
 
 flag examples
   default: True
@@ -50,10 +52,7 @@ executable reflection-from-json
   if !flag(examples)
     buildable:         False
   main-is:             FromJSON.hs
-  build-depends:
-                       -- TODO: Eventually, we should bump the lower version
-                       -- bounds to >=2 so that we can remove some CPP in FromJSON.
-                       aeson >= 1 && < 2.3,
+  build-depends:       aeson >= 2 && < 2.3,
                        base >= 4.9 && < 5,
                        microlens,
                        microlens-aeson >= 2.5.1,
