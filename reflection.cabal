@@ -114,7 +114,7 @@ test-suite spec
   build-tool-depends: hspec-discover:hspec-discover >= 1.8
   build-depends:
     base       >= 4.9 && < 5,
-    containers >= 0.1 && < 0.8,
+    containers >= 0.1 && < 0.9,
     hspec      >= 2   && < 3,
     QuickCheck >= 2   && < 3,
     reflection
