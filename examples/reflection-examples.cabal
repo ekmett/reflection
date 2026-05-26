@@ -40,9 +40,7 @@ library
   build-depends:       base >= 4.9 && < 5,
                        constraints,
                        newtype-generics >= 0.5.3,
-                       reflection,
-                       semigroups,
-                       tagged
+                       reflection
   hs-source-dirs:      .
   ghc-options:         -Wall
   if impl(ghc >= 8.6)
@@ -58,8 +56,6 @@ executable reflection-from-json
                        microlens,
                        microlens-aeson >= 2.5.1,
                        reflection,
-                       semigroups,
-                       tagged,
                        text
   hs-source-dirs:      .
   ghc-options:         -Wall -threaded -rtsopts
@@ -70,8 +66,7 @@ executable reflection-reader-like
     buildable:         False
   main-is:             ReaderLike.hs
   build-depends:       base >= 4.9 && < 5,
-                       reflection,
-                       tagged
+                       reflection
   hs-source-dirs:      .
   ghc-options:         -Wall -threaded -rtsopts
   if impl(ghc >= 8.6)
