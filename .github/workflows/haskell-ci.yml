@@ -8,9 +8,9 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.19.20260331
+# version: 0.19.20260926
 #
-# REGENDATA ("0.19.20260331",["github","--config=cabal.haskell-ci","cabal.project"])
+# REGENDATA ("0.19.20260926",["github","--config=cabal.haskell-ci","cabal.project"])
 #
 name: Haskell-CI
 on:
@@ -30,6 +30,11 @@ jobs:
     strategy:
       matrix:
         include:
+          - compiler: ghc-9.14.1
+            compilerKind: ghc
+            compilerVersion: 9.14.1
+            setup-method: ghcup
+            allow-failure: false
           - compiler: ghc-9.12.4
             compilerKind: ghc
             compilerVersion: 9.12.4
@@ -197,7 +202,7 @@ jobs:
           chmod a+x $HOME/.cabal/bin/cabal-docspec
           cabal-docspec --version
       - name: checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v7
         with:
           path: source
       - name: initial cabal.project for sdist
@@ -243,7 +248,7 @@ jobs:
           $CABAL v2-build $ARG_COMPILER $ARG_TESTS $ARG_BENCH --dry-run all
           cabal-plan
       - name: restore cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v6
         with:
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
           path: ~/.cabal/store
@@ -273,7 +278,7 @@ jobs:
           $CABAL v2-build $ARG_COMPILER --disable-tests --disable-benchmarks all
       - name: save cache
         if: always()
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v6
         with:
           key: ${{ runner.os }}-${{ matrix.compiler }}-${{ github.sha }}
           path: ~/.cabal/store
