@@ -630,8 +630,20 @@ foldBy f z = reifyMonoid f z (foldMap ReflectedMonoid)
 foldMapBy :: Foldable t => (r -> r -> r) -> r -> (a -> r) -> t a -> r
 foldMapBy f z g = reifyMonoid f z (foldMap (ReflectedMonoid #. g))
 
+-- | Explicit 'Applicative' operations. A value @ReifiedApplicative pur app@
+-- should satisfy the identity, composition, homomorphism and interchange laws:
+--
+-- @
+-- app (pur 'id') v ≡ v
+-- app (app (app (pur (.)) u) v) w ≡ app u (app v w)
+-- app (pur f) (pur x) ≡ pur (f x)
+-- app u (pur y) ≡ app (pur ($ y)) u
+-- @
 data ReifiedApplicative f = ReifiedApplicative { reifiedPure :: forall a. a -> f a, reifiedAp :: forall a b. f (a -> b) -> f a -> f b }
 
+-- | An action whose 'Functor' and 'Applicative' instances use the operations
+-- reflected by the tag @s@. Construct actions with @ReflectedApplicative@
+-- inside the continuation passed to 'reifyApplicative'.
 newtype ReflectedApplicative f s a = ReflectedApplicative (f a)
 
 instance Reifies s (ReifiedApplicative f) => Functor (ReflectedApplicative f s) where
@@ -647,6 +659,16 @@ reflectResult1 f = f (reflect (Proxy :: Proxy s))
 unreflectedApplicative :: ReflectedApplicative f s a -> proxy s -> f a
 unreflectedApplicative (ReflectedApplicative a) _ = a
 
+-- | Supply pure and application operations to a computation using an
+-- 'Applicative' instance, then unwrap its result. The supplied operations
+-- must satisfy the laws of @ReifiedApplicative@.
+--
+-- @
+-- 'reifyApplicative' 'pure' ('<*>') ('traverse' (ReflectedApplicative . f)) ≡ 'traverse' f
+-- @
+--
+-- >>> reifyApplicative Just (<*>) (traverse (ReflectedApplicative . Just)) [1,2,3 :: Int]
+-- Just [1,2,3]
 reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: *). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
 reifyApplicative f g m xs = reify (ReifiedApplicative f g) (unreflectedApplicative (m xs))
 
@@ -657,7 +679,7 @@ traverseBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -
 traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative #. f))
 
 -- | Sequence a container using its 'Traversable' instance using
--- explicitly provided 'Applicative' operations. This is like 'sequence'
+-- explicitly provided 'Applicative' operations. This is like 'sequenceA'
 -- where the 'Applicative' instance can be manually specified.
 sequenceBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> t (f a) -> f (t a)
 sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
