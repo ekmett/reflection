@@ -1,3 +1,5 @@
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -46,6 +48,18 @@ module Data.Reflection
     (
       Reifies(..)
     , reify
+    -- * Reified Monoids
+    , ReifiedMonoid(..)
+    , ReflectedMonoid(..)
+    , reifyMonoid
+    , foldMapBy
+    , foldBy
+    -- * Reified Applicatives
+    , ReifiedApplicative(..)
+    , ReflectedApplicative(..)
+    , reifyApplicative
+    , traverseBy
+    , sequenceBy
     ) where
 
 import Foreign.Ptr
@@ -53,6 +67,8 @@ import Foreign.StablePtr
 import System.IO.Unsafe
 import Control.Applicative
 import Control.Exception
+import Data.Coerce (Coercible, coerce)
+import Data.Semigroup as Sem
 import Data.Proxy
 import Data.Bits
 import Data.Word
@@ -239,3 +255,128 @@ reify a k = unsafeDupablePerformIO $ do
               reifyByte (fromIntegral (n `shiftR` 48)) (\s6 ->
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   withStableBox k $ stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+
+-- | Explicit 'Monoid' operations. A value @ReifiedMonoid f z@ should satisfy:
+--
+-- @
+-- f (f x y) z' ≡ f x (f y z')
+-- f z x ≡ x
+-- f x z ≡ x
+-- @
+data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
+
+instance Reifies s (ReifiedMonoid a) => Sem.Semigroup (ReflectedMonoid a s) where
+  ReflectedMonoid x <> ReflectedMonoid y = reflectResult (\m -> ReflectedMonoid (reifiedMappend m x y))
+
+instance Reifies s (ReifiedMonoid a) => Monoid (ReflectedMonoid a s) where
+#if !(MIN_VERSION_base(4,11,0))
+  mappend = (<>)
+#endif
+  mempty = reflectResult (\m -> ReflectedMonoid (reifiedMempty  m    ))
+
+reflectResult :: forall f s a. Reifies s a => (a -> f s) -> f s
+reflectResult f = f (reflect (Proxy :: Proxy s))
+
+-- | A value whose 'Semigroup' and 'Monoid' instances use the operations
+-- reflected by the tag @s@. Construct values with @ReflectedMonoid@ inside
+-- the continuation passed to 'reifyMonoid'.
+newtype ReflectedMonoid a s = ReflectedMonoid a
+
+unreflectedMonoid :: ReflectedMonoid a s -> proxy s -> a
+unreflectedMonoid (ReflectedMonoid a) _ = a
+
+-- | Supply a multiplication and identity to a computation using a 'Monoid'
+-- instance, then unwrap its result. The supplied operations must satisfy
+-- the laws of @ReifiedMonoid@.
+--
+-- @
+-- 'reifyMonoid' 'mappend' 'mempty' ('foldMap' ReflectedMonoid) ≡ 'Data.Foldable.fold'
+-- @
+--
+-- >>> reifyMonoid (+) 0 (foldMap ReflectedMonoid) [1,2,3 :: Int]
+-- 6
+reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: *). Reifies s (ReifiedMonoid a) => t -> ReflectedMonoid a s) -> t -> a
+reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
+
+-- | Fold a value using its 'Foldable' instance using
+-- explicitly provided 'Monoid' operations. This is like 'Data.Foldable.fold'
+-- where the 'Monoid' instance can be manually specified.
+--
+-- @
+-- 'foldBy' 'mappend' 'mempty' ≡ 'Data.Foldable.fold'
+-- @
+--
+-- >>> foldBy (++) [] ["hello","world"]
+-- "helloworld"
+foldBy :: Foldable t => (a -> a -> a) -> a -> t a -> a
+foldBy f z = reifyMonoid f z (foldMap ReflectedMonoid)
+
+-- | Fold a value using its 'Foldable' instance using
+-- explicitly provided 'Monoid' operations. This is like 'foldMap'
+-- where the 'Monoid' instance can be manually specified.
+--
+-- @
+-- 'foldMapBy' 'mappend' 'mempty' ≡ 'foldMap'
+-- @
+--
+-- >>> foldMapBy (+) 0 length ["hello","world"]
+-- 10
+foldMapBy :: Foldable t => (r -> r -> r) -> r -> (a -> r) -> t a -> r
+foldMapBy f z g = reifyMonoid f z (foldMap (ReflectedMonoid #. g))
+
+-- | Explicit 'Applicative' operations. A value @ReifiedApplicative pur app@
+-- should satisfy the identity, composition, homomorphism and interchange laws:
+--
+-- @
+-- app (pur 'id') v ≡ v
+-- app (app (app (pur (.)) u) v) w ≡ app u (app v w)
+-- app (pur f) (pur x) ≡ pur (f x)
+-- app u (pur y) ≡ app (pur ($ y)) u
+-- @
+data ReifiedApplicative f = ReifiedApplicative { reifiedPure :: forall a. a -> f a, reifiedAp :: forall a b. f (a -> b) -> f a -> f b }
+
+-- | An action whose 'Functor' and 'Applicative' instances use the operations
+-- reflected by the tag @s@. Construct actions with @ReflectedApplicative@
+-- inside the continuation passed to 'reifyApplicative'.
+newtype ReflectedApplicative f s a = ReflectedApplicative (f a)
+
+instance Reifies s (ReifiedApplicative f) => Functor (ReflectedApplicative f s) where
+  fmap = liftA
+
+instance Reifies s (ReifiedApplicative f) => Applicative (ReflectedApplicative f s) where
+  pure a = reflectResult1 (\m -> ReflectedApplicative (reifiedPure m a))
+  ReflectedApplicative x <*> ReflectedApplicative y = reflectResult1 (\m -> ReflectedApplicative (reifiedAp m x y))
+
+reflectResult1 :: forall f s a b. Reifies s a => (a -> f s b) -> f s b
+reflectResult1 f = f (reflect (Proxy :: Proxy s))
+
+unreflectedApplicative :: ReflectedApplicative f s a -> proxy s -> f a
+unreflectedApplicative (ReflectedApplicative a) _ = a
+
+-- | Supply pure and application operations to a computation using an
+-- 'Applicative' instance, then unwrap its result. The supplied operations
+-- must satisfy the laws of @ReifiedApplicative@.
+--
+-- @
+-- 'reifyApplicative' 'pure' ('<*>') ('traverse' (ReflectedApplicative . f)) ≡ 'traverse' f
+-- @
+--
+-- >>> reifyApplicative Just (<*>) (traverse (ReflectedApplicative . Just)) [1,2,3 :: Int]
+-- Just [1,2,3]
+reifyApplicative :: (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (forall (s :: *). Reifies s (ReifiedApplicative f) => t -> ReflectedApplicative f s a) -> t -> f a
+reifyApplicative f g m xs = reify (ReifiedApplicative f g) (unreflectedApplicative (m xs))
+
+-- | Traverse a container using its 'Traversable' instance using
+-- explicitly provided 'Applicative' operations. This is like 'traverse'
+-- where the 'Applicative' instance can be manually specified.
+traverseBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> (a -> f b) -> t a -> f (t b)
+traverseBy pur app f = reifyApplicative pur app (traverse (ReflectedApplicative #. f))
+
+-- | Sequence a container using its 'Traversable' instance using
+-- explicitly provided 'Applicative' operations. This is like 'sequenceA'
+-- where the 'Applicative' instance can be manually specified.
+sequenceBy :: Traversable t => (forall x. x -> f x) -> (forall x y. f (x -> y) -> f x -> f y) -> t (f a) -> f (t a)
+sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
+
+(#.) :: Coercible c b => (b -> c) -> (a -> b) -> (a -> c)
+(#.) _ = coerce (\x -> x :: b) :: forall a b. Coercible b a => a -> b
