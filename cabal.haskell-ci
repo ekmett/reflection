@@ -8,7 +8,7 @@ error-missing-methods:  none
 docspec:                True
 
 constraint-set slow
-  constraints: reflection +slow, reflection-examples -examples
+  constraints: reflection +slow
   tests: True
   run-tests: True
   docspec: True

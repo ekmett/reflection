@@ -281,11 +281,11 @@ jobs:
           rm -f cabal.project.local
       - name: constraint set slow
         run: |
-          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' --constraint='reflection-examples -examples' all --dry-run
+          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' all --dry-run
           cabal-plan topo | sort
-          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' --constraint='reflection-examples -examples' all
+          $CABAL v2-build $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' all
           cabal-docspec $ARG_COMPILER
-          $CABAL v2-test $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' --constraint='reflection-examples -examples' all
+          $CABAL v2-test $ARG_COMPILER --enable-tests --disable-benchmarks --constraint='reflection +slow' all
       - name: save cache
         if: always()
         uses: actions/cache/save@v6
