@@ -114,6 +114,18 @@ BYTES(GO)
 _ -> impossible
 }
 
+-- | Associate a type-level tag @s@ with a value of type @a@.
+-- The functional dependency @s -> a@ means that the tag determines the
+-- type of the reflected value.
+--
+-- Values introduced by 'reify' satisfy:
+--
+-- @
+-- 'reify' a 'reflect' ≡ a
+-- @
+--
+-- >>> reify (42 :: Int) reflect
+-- 42
 class Reifies s a | s -> a where
   -- | Recover a value inside a 'reify' context, given a proxy for its
   -- reified type.
