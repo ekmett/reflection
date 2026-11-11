@@ -562,6 +562,13 @@ reifyTypeable a k = unsafeDupablePerformIO $ do
                 reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
                   withStableBox k $ stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
 
+-- | Explicit 'Monoid' operations. A value @ReifiedMonoid f z@ should satisfy:
+--
+-- @
+-- f (f x y) z' ≡ f x (f y z')
+-- f z x ≡ x
+-- f x z ≡ x
+-- @
 data ReifiedMonoid a = ReifiedMonoid { reifiedMappend :: a -> a -> a, reifiedMempty :: a }
 
 instance Reifies s (ReifiedMonoid a) => Sem.Semigroup (ReflectedMonoid a s) where
@@ -576,11 +583,24 @@ instance Reifies s (ReifiedMonoid a) => Monoid (ReflectedMonoid a s) where
 reflectResult :: forall f s a. Reifies s a => (a -> f s) -> f s
 reflectResult f = f (reflect (Proxy :: Proxy s))
 
+-- | A value whose 'Semigroup' and 'Monoid' instances use the operations
+-- reflected by the tag @s@. Construct values with @ReflectedMonoid@ inside
+-- the continuation passed to 'reifyMonoid'.
 newtype ReflectedMonoid a s = ReflectedMonoid a
 
 unreflectedMonoid :: ReflectedMonoid a s -> proxy s -> a
 unreflectedMonoid (ReflectedMonoid a) _ = a
 
+-- | Supply a multiplication and identity to a computation using a 'Monoid'
+-- instance, then unwrap its result. The supplied operations must satisfy
+-- the laws of @ReifiedMonoid@.
+--
+-- @
+-- 'reifyMonoid' 'mappend' 'mempty' ('foldMap' ReflectedMonoid) ≡ 'Data.Foldable.fold'
+-- @
+--
+-- >>> reifyMonoid (+) 0 (foldMap ReflectedMonoid) [1,2,3 :: Int]
+-- 6
 reifyMonoid :: (a -> a -> a) -> a -> (forall (s :: *). Reifies s (ReifiedMonoid a) => t -> ReflectedMonoid a s) -> t -> a
 reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
 
@@ -589,7 +609,7 @@ reifyMonoid f z m xs = reify (ReifiedMonoid f z) (unreflectedMonoid (m xs))
 -- where the 'Monoid' instance can be manually specified.
 --
 -- @
--- 'foldBy' 'mappend' 'mempty' ≡ 'fold'
+-- 'foldBy' 'mappend' 'mempty' ≡ 'Data.Foldable.fold'
 -- @
 --
 -- >>> foldBy (++) [] ["hello","world"]
