@@ -13,7 +13,7 @@
 ----------------------------------------------------------------------------
 -- |
 -- Module     : Data.Reflection
--- Copyright  : 2009-2012 Edward Kmett,
+-- Copyright  : 2009-2026 Edward Kmett,
 --              2012 Elliott Hird,
 --              2004 Oleg Kiselyov and Chung-chieh Shan
 -- License    : BSD3

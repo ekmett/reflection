@@ -10,7 +10,7 @@ bug-reports:    http://github.com/ekmett/reflection/issues
 category:       Data, Reflection, Dependent Types
 synopsis:       Examples of reflection
 description:    Examples of reflection.
-copyright:      2009-2013 Edward A. Kmett,
+copyright:      2009-2026 Edward A. Kmett,
                 2012 Elliott Hird,
                 2004 Oleg Kiselyov and Chung-chieh Shan
 build-type:     Simple
