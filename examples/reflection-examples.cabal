@@ -40,7 +40,6 @@ library
                        Monoid
   build-depends:       base >= 4.9 && < 5,
                        constraints,
-                       newtype-generics >= 0.5.3,
                        reflection
   hs-source-dirs:      .
   ghc-options:         -Wall
