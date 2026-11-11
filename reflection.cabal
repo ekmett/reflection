@@ -55,10 +55,11 @@ extra-source-files:
   README.markdown
   slow/Data/Reflection.hs
   fast/Data/Reflection.hs
+  tests/Slow.hs
 
 flag slow
   description:
-    If you enable this flag, we use a more portable much much slower implementation. Moreover, the 'Given' API is broken, so this is currently an unsupported configuration. If you feel the need to turn on this flag for any reason, please email the maintainer!
+    Use a much slower implementation that only provides 'Reifies' and 'reify'.
   default: False
   manual: False
 
@@ -86,7 +87,7 @@ library
 
   default-language: Haskell98
 
-  if flag(template-haskell) && impl(ghc)
+  if flag(template-haskell) && !flag(slow) && impl(ghc)
     -- other-extensions: TemplateHaskellQuotes -- Hackage doesn't know this extension yet
     build-depends: template-haskell
 
@@ -105,17 +106,23 @@ library
   exposed-modules: Data.Reflection
 
 test-suite spec
-  type: exitcode-stdio-1.0
   hs-source-dirs: tests
-  main-is: Spec.hs
-  other-modules: ReifyNatSpec
-                 T47Spec
+  other-modules: ReifySpec
+  if flag(slow)
+    type: exitcode-stdio-1.0
+    main-is: Slow.hs
+  else
+    type: exitcode-stdio-1.0
+    main-is: Spec.hs
+    other-modules: ReifyNatSpec
+                   T47Spec
+    build-tool-depends: hspec-discover:hspec-discover >= 1.8
+    build-depends:
+      containers >= 0.1 && < 0.9,
+      QuickCheck >= 2   && < 3
   ghc-options: -Wall
   default-language: Haskell98
-  build-tool-depends: hspec-discover:hspec-discover >= 1.8
   build-depends:
     base       >= 4.9 && < 5,
-    containers >= 0.1 && < 0.9,
     hspec      >= 2   && < 3,
-    QuickCheck >= 2   && < 3,
     reflection
