@@ -1,6 +1,11 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE PatternGuards #-}
+{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE EmptyDataDecls #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE KindSignatures #-}
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE MonoLocalBinds #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE FunctionalDependencies #-}
@@ -8,6 +13,10 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE Rank2Types #-}
 {-# LANGUAGE UndecidableInstances #-}
+#ifdef MIN_VERSION_template_haskell
+{-# LANGUAGE TemplateHaskellQuotes #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
+#endif
 {-# OPTIONS_GHC -fno-cse #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 {-# OPTIONS_GHC -fno-float-in #-}
@@ -48,6 +57,15 @@ module Data.Reflection
     (
       Reifies(..)
     , reify
+    , reifyNat
+    , reifySymbol
+    , reifyTypeable
+#ifdef MIN_VERSION_template_haskell
+    -- * Template Haskell reflection
+    , int, nat
+#endif
+    -- * Useful compile time naturals
+    , Z, D, SD, PD
     -- * Reified Monoids
     , ReifiedMonoid(..)
     , ReflectedMonoid(..)
@@ -71,13 +89,19 @@ import Data.Coerce (Coercible, coerce)
 import Data.Semigroup as Sem
 import Data.Proxy
 import Data.Bits
+import Data.Typeable
 import Data.Word
+import GHC.TypeLits
+#ifdef MIN_VERSION_template_haskell
+import Control.Monad
+import Language.Haskell.TH hiding (reify)
+#endif
 
 #ifdef __HUGS__
 #define unsafeDupablePerformIO unsafePerformIO
 #endif
 
-class B s where
+class Typeable s => B s where
   reflectByte :: proxy s -> IntPtr
 
 #define BYTES(GO) \
@@ -120,7 +144,7 @@ BYTES(GO)
 impossible :: a
 impossible = error "Data.Reflection.reifyByte: impossible"
 
-reifyByte :: Word8 -> (forall s. B s => Proxy s -> r) -> r
+reifyByte :: Word8 -> (forall (s :: *). B s => Proxy s -> r) -> r
 reifyByte w k = case w of {
 #define GO(Tn,n) n -> k (Proxy :: Proxy Tn);
 BYTES(GO)
@@ -219,7 +243,7 @@ instance Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box b)
     Box a -> a
 
 -- Ensure that exactly one dictionary of Reifies (StableBox ...) is created and
--- evaluated per reify call.
+-- evaluated per reify or reifyTypeable call.
 --
 -- Evaluating the dictionary's thunk frees the allocated StablePtr, and the
 -- contents of the StablePtr replace the thunk. Creating two dictionaries would
@@ -228,7 +252,7 @@ instance Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box b)
 -- (see https://github.com/ekmett/reflection/issues/54).
 --
 -- To separate evaluation of the dictionary and evaluation of the actual
--- argument passed to reify, we insert a Box in between.
+-- argument passed to reify or reifyTypeable, we insert a Box in between.
 withStableBox
   :: Reifies (StableBox b0 b1 b2 b3 b4 b5 b6 b7 a) (Box a)
   => (Reifies (Stable b0 b1 b2 b3 b4 b5 b6 b7 a) a
@@ -242,7 +266,7 @@ withStableBox k p = do
 {-# NOINLINE withStableBox #-}
 
 -- | Reify a value at the type level, to be recovered with 'reflect'.
-reify :: a -> (forall s. (Reifies s a) => Proxy s -> r) -> r
+reify :: a -> (forall (s :: *). (Reifies s a) => Proxy s -> r) -> r
 reify a k = unsafeDupablePerformIO $ do
   p <- newStablePtr (Box a)
   let n = stablePtrToIntPtr p
@@ -380,3 +404,174 @@ sequenceBy pur app = reifyApplicative pur app (traverse ReflectedApplicative)
 
 (#.) :: Coercible c b => (b -> c) -> (a -> b) -> (a -> c)
 (#.) _ = coerce (\x -> x :: b) :: forall a b. Coercible b a => a -> b
+
+instance KnownNat n => Reifies n Integer where
+  reflect = natVal
+
+instance KnownSymbol n => Reifies n String where
+  reflect = symbolVal
+
+-- | Reify a nonnegative integer into a 'KnownNat' instance.
+-- Passing a negative integer throws 'Underflow'.
+--
+-- >>> reifyNat 4 reflect
+-- 4
+reifyNat :: Integer -> (forall (n :: Nat). KnownNat n => Proxy n -> r) -> r
+reifyNat n k = case someNatVal n of
+  Just (SomeNat p) -> k p
+  Nothing -> throw Underflow
+
+-- | Reify a string into a 'KnownSymbol' instance.
+--
+-- >>> reifySymbol "hello" reflect
+-- "hello"
+reifySymbol :: String -> (forall (s :: Symbol). KnownSymbol s => Proxy s -> r) -> r
+reifySymbol s k = case someSymbolVal s of
+  SomeSymbol p -> k p
+
+-- | Reify a value at the type level in a 'Typeable'-compatible fashion,
+-- to be recovered with 'reflect'.
+reifyTypeable :: Typeable a => a -> (forall (s :: *). (Typeable s, Reifies s a) => Proxy s -> r) -> r
+reifyTypeable a k = unsafeDupablePerformIO $ do
+  p <- newStablePtr (Box a)
+  let n = stablePtrToIntPtr p
+  reifyByte (fromIntegral n) (\s0 ->
+    reifyByte (fromIntegral (n `shiftR` 8)) (\s1 ->
+      reifyByte (fromIntegral (n `shiftR` 16)) (\s2 ->
+        reifyByte (fromIntegral (n `shiftR` 24)) (\s3 ->
+          reifyByte (fromIntegral (n `shiftR` 32)) (\s4 ->
+            reifyByte (fromIntegral (n `shiftR` 40)) (\s5 ->
+              reifyByte (fromIntegral (n `shiftR` 48)) (\s6 ->
+                reifyByte (fromIntegral (n `shiftR` 56)) (\s7 ->
+                  withStableBox k $ stable s0 s1 s2 s3 s4 s5 s6 s7))))))))
+
+--------------------------------------------------------------------------------
+-- Explicit Numeric Reflection
+--------------------------------------------------------------------------------
+
+-- | 0
+data Z
+-- | 2/n/
+data D  (n :: *)
+-- | 2/n/ + 1
+data SD (n :: *)
+-- | 2/n/ - 1
+data PD (n :: *)
+
+instance Reifies Z Int where
+  reflect _ = 0
+  {-# INLINE reflect #-}
+
+retagD :: (Proxy n -> a) -> proxy (D n) -> a
+retagD f _ = f Proxy
+{-# INLINE retagD #-}
+
+retagSD :: (Proxy n -> a) -> proxy (SD n) -> a
+retagSD f _ = f Proxy
+{-# INLINE retagSD #-}
+
+retagPD :: (Proxy n -> a) -> proxy (PD n) -> a
+retagPD f _ = f Proxy
+{-# INLINE retagPD #-}
+
+instance Reifies n Int => Reifies (D n) Int where
+  reflect = (\n -> n + n) `fmap` retagD reflect
+  {-# INLINE reflect #-}
+
+instance Reifies n Int => Reifies (SD n) Int where
+  reflect = (\n -> n + n + 1) `fmap` retagSD reflect
+  {-# INLINE reflect #-}
+
+instance Reifies n Int => Reifies (PD n) Int where
+  reflect = (\n -> n + n - 1) `fmap` retagPD reflect
+  {-# INLINE reflect #-}
+
+#ifdef MIN_VERSION_template_haskell
+-- | This can be used to generate a template haskell splice for a type level version of a given 'int'.
+--
+-- This does not use GHC TypeLits, instead it generates a numeric type by hand similar to the ones used
+-- in the \"Functional Pearl: Implicit Configurations\" paper by Oleg Kiselyov and Chung-Chieh Shan.
+--
+-- @instance Num (Q Exp)@ provided in this package allows writing @$(3)@
+-- instead of @$(int 3)@.
+int :: Int -> TypeQ
+int n = case quotRem n 2 of
+  (0, 0) -> conT ''Z
+  (q,-1) -> conT ''PD `appT` int q
+  (q, 0) -> conT ''D  `appT` int q
+  (q, 1) -> conT ''SD `appT` int q
+  _     -> error "ghc is bad at math"
+
+-- | This is a restricted version of 'int' that can only generate natural numbers. Attempting to generate
+-- a negative number results in a compile time error. Also the resulting sequence will consist entirely of
+-- Z, D, and SD constructors representing the number in zeroless binary.
+nat :: Int -> TypeQ
+nat n
+  | n >= 0 = int n
+  | otherwise = error "nat: negative"
+
+instance Num a => Num (Q a) where
+  (+) = liftM2 (+)
+  (*) = liftM2 (*)
+  (-) = liftM2 (-)
+  negate = fmap negate
+  abs = fmap abs
+  signum = fmap signum
+  fromInteger = return . fromInteger
+
+instance Fractional a => Fractional (Q a) where
+  (/) = liftM2 (/)
+  recip = fmap recip
+  fromRational = return . fromRational
+
+-- | This permits the use of $(5) as a type splice.
+instance Num Type where
+  LitT (NumTyLit a) + LitT (NumTyLit b) = LitT (NumTyLit (a+b))
+  a + b = AppT (AppT (VarT ''(+)) a) b
+
+  LitT (NumTyLit a) * LitT (NumTyLit b) = LitT (NumTyLit (a*b))
+  (*) a b = AppT (AppT (VarT ''(GHC.TypeLits.*)) a) b
+  a - b = AppT (AppT (VarT ''(-)) a) b
+  fromInteger = LitT . NumTyLit
+  abs = error "Type.abs"
+  signum = error "Type.signum"
+
+onProxyType1 :: (Type -> Type) -> (Exp -> Exp)
+onProxyType1 f
+    (SigE _ ta@(AppT (ConT proxyName)  (VarT _)))
+    | proxyName == ''Proxy = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f ta)
+onProxyType1 f a =
+        LamE [SigP WildP na] body `AppE` a
+    where
+          body = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` f na)
+          na = VarT (mkName "na")
+
+onProxyType2 :: Name -> (Type -> Type -> Type) -> (Exp -> Exp -> Exp)
+onProxyType2 _fName f
+    (SigE _ (AppT (ConT proxyName)  ta))
+    (SigE _ (AppT (ConT proxyName') tb))
+    | proxyName == ''Proxy,
+      proxyName' == ''Proxy = ConE 'Proxy `SigE`
+                                        (ConT ''Proxy `AppT` f ta tb)
+-- the above case should only match for things like $(2 + 2)
+onProxyType2 fName _f a b = VarE fName `AppE` a `AppE` b
+
+-- | This permits the use of $(5) as an expression splice,
+-- which stands for @Proxy :: Proxy $(5)@
+instance Num Exp where
+  (+) = onProxyType2 'addProxy (+)
+  (*) = onProxyType2 'mulProxy (*)
+  (-) = onProxyType2 'subProxy (-)
+  negate = onProxyType1 negate
+  abs = onProxyType1 abs
+  signum = onProxyType1 signum
+  fromInteger n = ConE 'Proxy `SigE` (ConT ''Proxy `AppT` fromInteger n)
+
+addProxy :: Proxy a -> Proxy b -> Proxy (a + b)
+addProxy _ _ = Proxy
+mulProxy :: Proxy a -> Proxy b -> Proxy (a * b)
+mulProxy _ _ = Proxy
+subProxy :: Proxy a -> Proxy b -> Proxy (a - b)
+subProxy _ _ = Proxy
+
+#endif

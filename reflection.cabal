@@ -59,7 +59,7 @@ extra-source-files:
 
 flag slow
   description:
-    Use a much slower implementation.
+    Use a much slower implementation without the 'Given' and 'give' API.
   default: False
   manual: False
 
@@ -87,7 +87,7 @@ library
 
   default-language: Haskell98
 
-  if flag(template-haskell) && !flag(slow) && impl(ghc)
+  if flag(template-haskell) && impl(ghc)
     -- other-extensions: TemplateHaskellQuotes -- Hackage doesn't know this extension yet
     build-depends: template-haskell
 
@@ -109,21 +109,23 @@ test-suite spec
   hs-source-dirs: tests
   other-modules: ReifySpec
                  ReflectionSpec
+                 ReifyNatSpec
+                 THSpec
   if flag(slow)
     type: exitcode-stdio-1.0
     main-is: Slow.hs
   else
     type: exitcode-stdio-1.0
     main-is: Spec.hs
-    other-modules: ReifyNatSpec
-                   T47Spec
+    other-modules: T47Spec
     build-tool-depends: hspec-discover:hspec-discover >= 1.8
-    build-depends:
-      containers >= 0.1 && < 0.9,
-      QuickCheck >= 2   && < 3
+    build-depends: containers >= 0.1 && < 0.9
+  if flag(template-haskell)
+    build-depends: template-haskell
   ghc-options: -Wall
   default-language: Haskell98
   build-depends:
     base       >= 4.9 && < 5,
     hspec      >= 2   && < 3,
+    QuickCheck >= 2   && < 3,
     reflection

@@ -1,7 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 module ReflectionSpec where
 
+import Control.Exception (evaluate)
+import System.Mem (performGC)
+import Data.Dynamic (dynTypeRep, fromDynamic, toDyn)
+import Data.Proxy (Proxy(..))
 import Data.Reflection
+import Data.Typeable (cast, typeRep)
+import GHC.TypeLits (symbolVal)
 import Test.Hspec
 import Test.Hspec.QuickCheck
 
@@ -10,6 +16,41 @@ main = hspec spec
 
 spec :: Spec
 spec = do
+
+  describe "reifyTypeable" $ do
+    prop "recovers a reflected value through Dynamic" $ \(a :: Int) ->
+      reifyTypeable a $ \(p :: Proxy s) ->
+        case fromDynamic (toDyn (reflect p, p)) of
+          Just (b, q :: Proxy s) -> b == a && reflect q == a
+          Nothing -> False
+    it "supports type representations and casts" $
+      reifyTypeable (1 :: Int) $ \(p :: Proxy s) -> do
+        dynTypeRep (toDyn p) `shouldBe` typeRep (Proxy :: Proxy (Proxy s))
+        (cast p :: Maybe (Proxy s)) `shouldBe` Just p
+        (cast p :: Maybe Int) `shouldBe` Nothing
+    it "does not force an unused value" $
+      reifyTypeable (error "unused" :: Int) (const ()) `shouldBe` ()
+
+    it "retains a lazy value after the continuation returns" $ do
+      action <- evaluate $ reifyTypeable ([1,2,3] ++ error "unused" :: [Int]) $ \p ->
+        return (take 3 (reflect p)) :: IO [Int]
+      performGC
+      action `shouldReturn` [1,2,3]
+      performGC
+      action `shouldReturn` [1,2,3]
+
+  describe "reifySymbol" $
+    prop "recovers the symbol through both interfaces" $ \s ->
+      reifySymbol s (\p -> (symbolVal p, reflect p)) == (s, s)
+
+  describe "explicit numeric reflection" $
+    it "reflects zero, doubling, successor and predecessor" $
+      ( reflect (Proxy :: Proxy Z)
+      , reflect (Proxy :: Proxy (D (SD Z)))
+      , reflect (Proxy :: Proxy (SD (D (SD Z))))
+      , reflect (Proxy :: Proxy (PD (D (PD Z))))
+      ) `shouldBe` (0 :: Int, 2 :: Int, 5 :: Int, -5 :: Int)
+
   describe "reified monoids" $ do
     prop "foldBy agrees with concatenation" $ \(xs :: [[Int]]) ->
       foldBy (++) [] xs == concat xs
